@@ -12,6 +12,7 @@ namespace ValleDePlata.Prototype
                 || other.GetComponentInParent<PrototypeVehicleController>() != null)
             {
                 PrototypeDebugState.Pressure = pressureLabel;
+                PrototypeRunMetrics.Active?.RecordPressureEnter();
             }
         }
 

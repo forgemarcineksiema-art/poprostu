@@ -16,6 +16,11 @@ namespace ValleDePlata.Prototype
 
         public void Interact()
         {
+            if (!used)
+            {
+                PrototypeRunMetrics.Active?.RecordInteraction(prompt);
+            }
+
             used = true;
             PrototypeDebugState.Interaction = usedMessage;
             ApplyColor(usedColor);

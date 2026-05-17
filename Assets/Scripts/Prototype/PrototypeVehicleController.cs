@@ -42,6 +42,7 @@ namespace ValleDePlata.Prototype
             PrototypeDebugState.Focus = "Vehicle";
             PrototypeDebugState.Speed = body.linearVelocity.magnitude;
             PrototypeDebugState.Interaction = "E / South Button: exit car";
+            PrototypeRunMetrics.Active?.RecordSpeed(body.linearVelocity.magnitude);
 
             if (PrototypeInput.InteractPressedThisFrame)
             {

@@ -23,6 +23,7 @@ namespace ValleDePlata.Prototype
             PrototypeDebugState.Route = IsComplete
                 ? "Complete"
                 : $"{nextCheckpointIndex}/{checkpointCount}";
+            PrototypeRunMetrics.Active?.RecordCheckpoint(label, IsComplete);
         }
 
         public void Configure(int totalCheckpoints)

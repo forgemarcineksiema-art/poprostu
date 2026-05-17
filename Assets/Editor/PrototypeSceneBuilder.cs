@@ -38,6 +38,7 @@ namespace ValleDePlata.Editor
             CreateVehicle();
             CreateRoute(routeGreen);
             CreateCamera(player);
+            CreateRunMetrics();
             CreateDebugHud();
 
             EditorSceneManager.SaveScene(scene, ScenePath);
@@ -155,6 +156,12 @@ namespace ValleDePlata.Editor
         {
             var debug = new GameObject("Prototype Debug HUD");
             debug.AddComponent<PrototypeDebugHud>();
+        }
+
+        private static void CreateRunMetrics()
+        {
+            var metrics = new GameObject("Phase 1 Run Metrics");
+            metrics.AddComponent<PrototypeRunMetrics>();
         }
 
         private static GameObject CreateCube(string name, Vector3 position, Vector3 scale, Material material)

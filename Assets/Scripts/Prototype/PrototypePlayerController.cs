@@ -32,6 +32,7 @@ namespace ValleDePlata.Prototype
             characterController.enabled = false;
             gameObject.SetActive(false);
             vehicle.Enter(this);
+            PrototypeRunMetrics.Active?.RecordVehicleEnter();
             PrototypeDebugState.Mode = "Driving";
         }
 
@@ -42,6 +43,7 @@ namespace ValleDePlata.Prototype
             gameObject.SetActive(true);
             characterController.enabled = true;
             currentVehicle = null;
+            PrototypeRunMetrics.Active?.RecordVehicleExit();
             PrototypeDebugState.Mode = "OnFoot";
         }
 
