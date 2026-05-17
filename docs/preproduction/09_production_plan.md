@@ -4,6 +4,8 @@
 
 Ten plan mówi, co robić po zatwierdzeniu preprodukcji. Nie zaczynamy od pełnej gry. Zaczynamy od dowodów, że fundament działa.
 
+Szczegółowy podział kilku faz, kryteria akceptacji i stop conditions są rozpisane w [20_multiphase_roadmap.md](20_multiphase_roadmap.md). Ten dokument zostaje krótkim streszczeniem kierunku produkcyjnego.
+
 ## Faza 0: Dokumenty decyzyjne
 
 Status: obecna faza.
@@ -19,7 +21,11 @@ Artefakty:
 - karty systemów,
 - mission grammar,
 - vertical slice,
-- roadmap.
+- roadmap,
+- prototype contract,
+- minimalny World State,
+- mikrotesty konsekwencji,
+- runbook autonomicznej pracy.
 
 Warunek przejścia dalej: dokumenty nie mogą sobie przeczyć, a vertical slice musi jasno wynikać z filarów.
 
@@ -45,13 +51,13 @@ Nie robić jeszcze:
 - dialogów,
 - dużego miasta.
 
-Warunek sukcesu: 10 minut ruchu i jazdy nie męczy, kamera nie walczy z graczem, a przejście pieszo/auto jest płynne.
+Warunek sukcesu: 10 minut ruchu i jazdy nie męczy, kamera nie walczy z graczem, a przejście pieszo/auto jest płynne. Pełny kontrakt Fazy 1 jest w [17_prototype_contract.md](17_prototype_contract.md).
 
 Równoległy warunek techniczny: ustalić bazowy target wydajności i zasady scen testowych dla Unity 6 URP, zanim projekt zacznie produkować miasto.
 
 ## Faza 2: Action and pressure prototyp
 
-Cel: sprawdzić, czy przemoc, AI i heat dają napięcie bez robienia z gry strzelnicy.
+Cel: sprawdzić, czy przemoc, AI i heat dają napięcie bez robienia z gry strzelnicy. Faza powinna zacząć się od mikrotestów z [19_microtests.md](19_microtests.md), a nie od pełnej misji.
 
 Zakres:
 
@@ -67,7 +73,7 @@ Warunek sukcesu: otwarta przemoc zmienia sytuację i tworzy presję, nie tylko k
 
 ## Faza 3: Imperium prototyp
 
-Cel: połączyć akcję z mapą wpływów.
+Cel: połączyć akcję z mapą wpływów. Minimalna prawda o świecie jest opisana w [18_world_state_model.md](18_world_state_model.md).
 
 Zakres:
 
@@ -157,4 +163,4 @@ Po zaakceptowaniu tego pakietu preprodukcyjnego następnym zadaniem nie jest jes
 4. mission design doc “Pierwszy Front”,
 5. vertical slice system cards.
 
-Rekomendacja: zrobić krótki review dokumentów 13-16 przeciwko `11_preproduction_review_gate.md`, a potem zacząć Faza 1 prototypu: wyłącznie feel TPP/kamera/jazda w szarej scenie. Nie zaczynać jeszcze pełnego kodu “Pierwszego Frontu”.
+Rekomendacja: zacząć Faza 1 prototypu według [17_prototype_contract.md](17_prototype_contract.md): wyłącznie feel TPP/kamera/jazda w szarej scenie. Nie zaczynać jeszcze pełnego kodu “Pierwszego Frontu”. Jeśli praca ma iść autonomicznie, użyć [21_autonomous_goal_runbook.md](21_autonomous_goal_runbook.md).

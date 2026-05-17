@@ -1,8 +1,8 @@
 # 11. Preproduction review gate
 
-## Werdykt v0.1
+## Werdykt v0.3
 
-Pakiet preprodukcji ma mocny kierunek, ale nie jest jeszcze gotowy do pełnego startu produkcji. Jest wystarczający, żeby prowadzić dalszą rozmowę bez błądzenia, ale nie wystarczający, żeby bezpiecznie kodować vertical slice.
+Pakiet preprodukcji ma mocny kierunek, ale nie jest jeszcze gotowy do pełnego startu produkcji. Jest wystarczający, żeby przejść do Fazy 1 feel prototypu, ale nie wystarczający, żeby bezpiecznie kodować pełny vertical slice.
 
 Najlepszy obecny rdzeń:
 
@@ -41,13 +41,23 @@ Pozostałe ryzyko: Mateo musi zostać utrzymany jako postać z własnym interese
 
 Status: slice system cards są uzupełnione w [12_vertical_slice_system_cards.md](12_vertical_slice_system_cards.md).
 
+Status dodatkowy: minimalny World State jest rozpisany w [18_world_state_model.md](18_world_state_model.md), a mikrotesty konsekwencji w [19_microtests.md](19_microtests.md).
+
 Pozostałe ryzyko: przy implementacji wartości “miłość ludzi” i “presja państwa” nadal mogą zostać zredukowane do abstrakcyjnych pasków. Test akceptacji musi wymuszać reakcję dzielnicy, porucznika, patrolu albo frontu.
 
 ### Vertical slice
 
 Status: mission design doc uzupełniony w [16_pierwszy_front_mission_design.md](16_pierwszy_front_mission_design.md).
 
-Pozostałe ryzyko: przed kodem trzeba jeszcze zdecydować, czy Faza 1 jest czystym feel prototypem, czy mini-prototypem jednego beatu misji. Rekomendacja pozostaje: najpierw feel TPP/kamera/jazda.
+Status dodatkowy: Faza 1 jest już zamknięta jako czysty feel prototyp w [17_prototype_contract.md](17_prototype_contract.md). Wielofazowa droga do slice'a jest rozpisana w [20_multiphase_roadmap.md](20_multiphase_roadmap.md).
+
+Pozostałe ryzyko: przed pełnym "Pierwszym Frontem" trzeba udowodnić feel, mikrotesty presji, World State i front/brudną kasę w osobnych fazach.
+
+### Autonomia
+
+Status: runbook pracy autonomicznej jest rozpisany w [21_autonomous_goal_runbook.md](21_autonomous_goal_runbook.md).
+
+Pozostałe ryzyko: Codex może zacząć za szeroko, jeśli goal nie ma jasnej fazy, non-goals, walidacji i stop condition.
 
 ## Definition of average
 
@@ -124,6 +134,6 @@ Nie projektować teraz szerzej. Nie dodawać kolejnych dzielnic, mechanik ani ak
 
 1. review dokumentów 13-16 przeciwko temu gate'owi,
 2. ewentualne korekty tonu/postaci/misji,
-3. Faza 1: feel prototyp TPP/kamera/jazda.
+3. Faza 1: feel prototyp TPP/kamera/jazda według [17_prototype_contract.md](17_prototype_contract.md).
 
 Po Faza 1 dopiero wracać do “Pierwszego Frontu” jako pełnego vertical slice.

@@ -2,6 +2,8 @@
 
 Te karty definiują minimalne systemy, które muszą działać w “Pierwszym Froncie”. To nie jest pełna implementacja, tylko decyzje, które usuwają mgłę przed prototypem.
 
+Szczegółowy minimalny model danych i eventów dla World State jest w [18_world_state_model.md](18_world_state_model.md). Te karty opisują intencję systemów, a dokument World State opisuje pierwszą prawdę danych dla slice'a.
+
 ## Card 1: World state
 
 ### Cel

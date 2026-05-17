@@ -8,6 +8,8 @@ Docelowy czas: 30-60 minut.
 
 Obszar: jedna dzielnica startowa, jeden sporny fragment miasta i jedna mała finca/posiadłość jako kontrast biedy i pierwszego smaku luksusu.
 
+Ważne: tego slice'a nie kodujemy jako pierwszego etapu. Najpierw musi przejść [Prototype Contract](17_prototype_contract.md), potem mikrotesty konsekwencji i World State z [20_multiphase_roadmap.md](20_multiphase_roadmap.md).
+
 ## Roboczy tytuł slice'a
 
 **Pierwszy Front**

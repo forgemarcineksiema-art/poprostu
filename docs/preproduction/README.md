@@ -23,6 +23,12 @@ Hipoteza startowa: **Imperium z ulicy**. Gracz wciela się w fikcyjnego Pablo, a
 15. [Protagonist brief: Pablo Valera](14_pablo_valera_protagonist_brief.md)
 16. [Pierwszy porucznik: Mateo Pardo](15_first_lieutenant_mateo_pardo.md)
 17. [Mission design doc: Pierwszy Front](16_pierwszy_front_mission_design.md)
+18. [Prototype Contract](17_prototype_contract.md)
+19. [Minimal World State Model](18_world_state_model.md)
+20. [Microtests konsekwencji](19_microtests.md)
+21. [Multiphase Roadmap](20_multiphase_roadmap.md)
+22. [Autonomous Goal Runbook](21_autonomous_goal_runbook.md)
+23. [Sleep Autonomous Goal Prompt](22_sleep_autonomous_goal_prompt.md)
 
 ## Zasada pracy
 
@@ -42,4 +48,6 @@ Robocze nazwy w dokumentach służą temu, żeby myśleć konkretnie. Można je 
 
 ## Status preprodukcji
 
-Obecny pakiet jest **v0.2 preproduction gate**, nie finalnym greenlightem pełnej produkcji. Style lock, protagonist brief, pierwszy porucznik i mission design doc dla “Pierwszego Frontu” są już rozpisane. Następny rozsądny krok to review tych czterech dokumentów przeciwko gate'owi w [11_preproduction_review_gate.md](11_preproduction_review_gate.md), a potem decyzja, czy zaczynać Faza 1: feel prototyp TPP/kamera/jazda.
+Obecny pakiet jest **v0.3 preproduction gate**, nie finalnym greenlightem pełnej produkcji. Style lock, protagonist brief, pierwszy porucznik i mission design doc dla “Pierwszego Frontu” są już rozpisane, a po review doszły dokumenty produkcyjne: prototype contract, minimalny World State, mikrotesty konsekwencji, wielofazowy roadmap i runbook pracy autonomicznej.
+
+Decyzja produkcyjna: **greenlight tylko na Faza 1: feel prototyp TPP/kamera/jazda**. Nie ma jeszcze greenlightu na pełny vertical slice ani pełną produkcję. Najbliższy sensowny kodowany krok opisuje [17_prototype_contract.md](17_prototype_contract.md), a praca autonomiczna powinna trzymać się [21_autonomous_goal_runbook.md](21_autonomous_goal_runbook.md). Gotowy prompt do nocnej pracy autonomicznej jest w [22_sleep_autonomous_goal_prompt.md](22_sleep_autonomous_goal_prompt.md).
