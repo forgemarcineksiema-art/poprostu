@@ -81,8 +81,13 @@ namespace ValleDePlata.Prototype
             ApplyDrag(PrototypeInput.HandbrakeHeld ? handbrakeDrag : drag);
         }
 
-        private void ExitDriver()
+        public void ExitDriver()
         {
+            if (driver == null)
+            {
+                return;
+            }
+
             var exit = exitPoint != null ? exitPoint : transform;
             var exitPosition = exit.position;
             var exitRotation = Quaternion.LookRotation(transform.forward, Vector3.up);

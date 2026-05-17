@@ -27,6 +27,7 @@ namespace ValleDePlata.Prototype
                 return;
             }
 
+            EnsureInitialized();
             currentVehicle = vehicle;
             characterController.enabled = false;
             gameObject.SetActive(false);
@@ -36,6 +37,7 @@ namespace ValleDePlata.Prototype
 
         public void ExitVehicle(Vector3 position, Quaternion rotation)
         {
+            EnsureInitialized();
             transform.SetPositionAndRotation(position, rotation);
             gameObject.SetActive(true);
             characterController.enabled = true;
@@ -45,7 +47,16 @@ namespace ValleDePlata.Prototype
 
         private void Awake()
         {
-            characterController = GetComponent<CharacterController>();
+            EnsureInitialized();
+        }
+
+        private void EnsureInitialized()
+        {
+            if (characterController == null)
+            {
+                characterController = GetComponent<CharacterController>();
+            }
+
             if (cameraPivot == null)
             {
                 cameraPivot = transform;
