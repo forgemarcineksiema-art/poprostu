@@ -28,14 +28,7 @@ namespace ValleDePlata.Prototype
 
         private void Awake()
         {
-            body = GetComponent<Rigidbody>();
-            body.interpolation = RigidbodyInterpolation.Interpolate;
-            body.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
-
-            if (cameraPivot == null)
-            {
-                cameraPivot = transform;
-            }
+            EnsureInitialized();
         }
 
         private void Update()
@@ -65,6 +58,13 @@ namespace ValleDePlata.Prototype
             }
 
             var move = PrototypeInput.Move;
+            ApplyDriveInput(move, PrototypeInput.HandbrakeHeld);
+        }
+
+        public void ApplyDriveInput(Vector2 move, bool handbrake)
+        {
+            EnsureInitialized();
+
             var forwardInput = move.y;
             var steerInput = move.x;
             var force = forwardInput >= 0f ? acceleration : reverseAcceleration;
@@ -78,7 +78,7 @@ namespace ValleDePlata.Prototype
             var steering = steerInput * turnRate * Mathf.Clamp01(speedFactor + 0.25f) * Time.fixedDeltaTime;
             body.MoveRotation(body.rotation * Quaternion.Euler(0f, steering, 0f));
 
-            ApplyDrag(PrototypeInput.HandbrakeHeld ? handbrakeDrag : drag);
+            ApplyDrag(handbrake ? handbrakeDrag : drag);
         }
 
         public void ExitDriver()
@@ -98,9 +98,25 @@ namespace ValleDePlata.Prototype
 
         private void ApplyDrag(float dragAmount)
         {
+            EnsureInitialized();
             var horizontalVelocity = new Vector3(body.linearVelocity.x, 0f, body.linearVelocity.z);
             var dragForce = -horizontalVelocity * dragAmount;
             body.AddForce(dragForce, ForceMode.Acceleration);
+        }
+
+        private void EnsureInitialized()
+        {
+            if (body == null)
+            {
+                body = GetComponent<Rigidbody>();
+                body.interpolation = RigidbodyInterpolation.Interpolate;
+                body.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
+            }
+
+            if (cameraPivot == null)
+            {
+                cameraPivot = transform;
+            }
         }
     }
 }

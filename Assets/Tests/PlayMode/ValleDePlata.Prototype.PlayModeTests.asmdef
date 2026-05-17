@@ -1,0 +1,19 @@
+{
+    "name": "ValleDePlata.Prototype.PlayModeTests",
+    "rootNamespace": "ValleDePlata.Tests",
+    "references": [
+        "ValleDePlata.Prototype"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "optionalUnityReferences": [
+        "TestAssemblies"
+    ],
+    "noEngineReferences": false
+}
