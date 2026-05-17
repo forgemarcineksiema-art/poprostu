@@ -6,6 +6,8 @@ namespace ValleDePlata.Prototype
         public static string Focus = "None";
         public static string Interaction = "None";
         public static string Pressure = "Quiet";
+        public static string Route = "Not started";
+        public static string LastCheckpoint = "None";
         public static float Speed;
     }
 }

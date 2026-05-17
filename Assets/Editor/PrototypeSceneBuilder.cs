@@ -36,6 +36,7 @@ namespace ValleDePlata.Editor
             CreateEnvironment(concrete, asphalt, sunBleachedWall, rust, patrolBlue, routeGreen);
             var player = CreatePlayer();
             CreateVehicle();
+            CreateRoute(routeGreen);
             CreateCamera(player);
             CreateDebugHud();
 
@@ -112,6 +113,27 @@ namespace ValleDePlata.Editor
             exitPoint.SetParent(vehicle.transform);
             exitPoint.localPosition = new Vector3(-1.8f, 0.2f, -0.6f);
             SetObjectReference(controller, "exitPoint", exitPoint);
+        }
+
+        private static void CreateRoute(Material routeGreen)
+        {
+            var routeObject = new GameObject("Phase 1 Route Progress");
+            var route = routeObject.AddComponent<PrototypeRouteProgress>();
+            route.Configure(5);
+
+            CreateCheckpoint(route, 0, "Start on foot", new Vector3(0f, 0.25f, -10f), routeGreen);
+            CreateCheckpoint(route, 1, "Enter vehicle lane", new Vector3(-2.4f, 0.25f, -4f), routeGreen);
+            CreateCheckpoint(route, 2, "Patrol pressure turn", new Vector3(0f, 0.25f, 34f), routeGreen);
+            CreateCheckpoint(route, 3, "Workshop interaction stop", new Vector3(2.5f, 0.25f, 49f), routeGreen);
+            CreateCheckpoint(route, 4, "Safe return", new Vector3(0f, 0.25f, -8f), routeGreen);
+        }
+
+        private static void CreateCheckpoint(PrototypeRouteProgress route, int index, string label, Vector3 position, Material material)
+        {
+            var checkpoint = CreateCube($"Route checkpoint {index}: {label}", position, new Vector3(3.4f, 0.5f, 1.4f), material);
+            checkpoint.GetComponent<Collider>().isTrigger = true;
+            var routeCheckpoint = checkpoint.AddComponent<PrototypeRouteCheckpoint>();
+            routeCheckpoint.Configure(route, index, label);
         }
 
         private static void CreateCamera(PrototypePlayerController player)

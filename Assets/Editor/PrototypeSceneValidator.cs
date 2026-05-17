@@ -23,11 +23,17 @@ namespace ValleDePlata.Editor
             RequireComponent<PrototypeDebugHud>("Prototype Debug HUD");
             RequireComponent<PrototypePressureZone>("Pressure patrol marker");
             RequireComponent<PrototypeInteractable>("Workshop shutter interactable");
+            RequireComponent<PrototypeRouteProgress>("Phase 1 Route Progress");
 
             RequireObject("Narrow asphalt route");
             RequireObject("Tight corner block");
             RequireObject("Static civilian car obstacle");
             RequireObject("Safe return marker");
+            RequireRouteCheckpoint(0, "Start on foot");
+            RequireRouteCheckpoint(1, "Enter vehicle lane");
+            RequireRouteCheckpoint(2, "Patrol pressure turn");
+            RequireRouteCheckpoint(3, "Workshop interaction stop");
+            RequireRouteCheckpoint(4, "Safe return");
 
             var camera = Camera.main;
             if (camera == null)
@@ -46,7 +52,7 @@ namespace ValleDePlata.Editor
             }
         }
 
-        private static void RequireComponent<T>(string objectName) where T : Component
+        private static T RequireComponent<T>(string objectName) where T : Component
         {
             var target = GameObject.Find(objectName);
             if (target == null)
@@ -57,6 +63,17 @@ namespace ValleDePlata.Editor
             if (target.GetComponent<T>() == null)
             {
                 Fail($"{objectName} is missing component {typeof(T).Name}.");
+            }
+
+            return target.GetComponent<T>();
+        }
+
+        private static void RequireRouteCheckpoint(int index, string label)
+        {
+            var checkpoint = RequireComponent<PrototypeRouteCheckpoint>($"Route checkpoint {index}: {label}");
+            if (checkpoint.CheckpointIndex != index)
+            {
+                Fail($"Route checkpoint {label} has index {checkpoint.CheckpointIndex}, expected {index}.");
             }
         }
 

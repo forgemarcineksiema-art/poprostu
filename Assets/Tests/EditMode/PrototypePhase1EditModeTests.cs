@@ -21,9 +21,15 @@ namespace ValleDePlata.Tests
             RequireComponent<PrototypeDebugHud>("Prototype Debug HUD");
             RequireComponent<PrototypePressureZone>("Pressure patrol marker");
             RequireComponent<PrototypeInteractable>("Workshop shutter interactable");
+            RequireComponent<PrototypeRouteProgress>("Phase 1 Route Progress");
             RequireObject("Narrow asphalt route");
             RequireObject("Tight corner block");
             RequireObject("Safe return marker");
+            RequireRouteCheckpoint(0, "Start on foot");
+            RequireRouteCheckpoint(1, "Enter vehicle lane");
+            RequireRouteCheckpoint(2, "Patrol pressure turn");
+            RequireRouteCheckpoint(3, "Workshop interaction stop");
+            RequireRouteCheckpoint(4, "Safe return");
 
             Assert.That(Camera.main, Is.Not.Null);
         }
@@ -63,6 +69,23 @@ namespace ValleDePlata.Tests
             Assert.That(found, Is.True);
         }
 
+        [Test]
+        public void RouteProgressAdvancesInCheckpointOrder()
+        {
+            EditorSceneManager.OpenScene(ScenePath);
+            var route = RequireComponent<PrototypeRouteProgress>("Phase 1 Route Progress");
+            var first = RequireComponent<PrototypeRouteCheckpoint>("Route checkpoint 0: Start on foot");
+            var second = RequireComponent<PrototypeRouteCheckpoint>("Route checkpoint 1: Enter vehicle lane");
+
+            route.Configure(5);
+            route.RegisterCheckpoint(second.CheckpointIndex, second.Label);
+            Assert.That(route.NextCheckpointIndex, Is.EqualTo(0), "Route should ignore out-of-order checkpoints.");
+
+            route.RegisterCheckpoint(first.CheckpointIndex, first.Label);
+            Assert.That(route.NextCheckpointIndex, Is.EqualTo(1));
+            Assert.That(PrototypeDebugState.LastCheckpoint, Is.EqualTo("Start on foot"));
+        }
+
         private static void RequireObject(string objectName)
         {
             Assert.That(GameObject.Find(objectName), Is.Not.Null, $"Missing required object: {objectName}");
@@ -75,6 +98,13 @@ namespace ValleDePlata.Tests
             var component = target.GetComponent<T>();
             Assert.That(component, Is.Not.Null, $"{objectName} is missing component {typeof(T).Name}.");
             return component;
+        }
+
+        private static void RequireRouteCheckpoint(int index, string label)
+        {
+            var checkpoint = RequireComponent<PrototypeRouteCheckpoint>($"Route checkpoint {index}: {label}");
+            Assert.That(checkpoint.CheckpointIndex, Is.EqualTo(index));
+            Assert.That(checkpoint.Label, Is.EqualTo(label));
         }
     }
 }
