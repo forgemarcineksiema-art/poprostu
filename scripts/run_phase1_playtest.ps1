@@ -55,7 +55,16 @@ Write-Host "Build exited with code $($run.ExitCode)."
 if (Test-Path -LiteralPath $metricsPath) {
     Write-Host ""
     Write-Host "Latest run metrics:"
-    Get-Content -LiteralPath $metricsPath
+    $metrics = Get-Content -LiteralPath $metricsPath
+    $metrics
+
+    $coverageLine = $metrics | Where-Object { $_ -like "CoverageComplete:*" } | Select-Object -First 1
+    if ($coverageLine -eq "CoverageComplete: True") {
+        Write-Host ""
+        Write-Host "Coverage gate: complete. Manual feel judgment is still required."
+    } else {
+        Write-Warning "Coverage gate: incomplete or missing. Rerun the route before judging Phase 1 feel."
+    }
 } else {
     Write-Warning "Metrics file was not found yet: $metricsPath"
 }

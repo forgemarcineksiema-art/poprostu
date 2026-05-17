@@ -15,6 +15,7 @@ Add a small local helper for the manual Phase 1 feel playtest.
 - Optionally rebuilds the Phase 1 developer build with `-BuildFirst`.
 - Launches `Builds\Phase1\ValleDePlataPhase1.exe`.
 - After the build closes, prints `phase1_latest_run.txt` if Unity wrote it.
+- Reads `CoverageComplete` and warns if the run did not cover the required Phase 1 beats.
 
 ## Why
 
@@ -34,6 +35,11 @@ Expected result:
 - prints repo path,
 - prints `Builds\Phase1\ValleDePlataPhase1.exe`,
 - prints the expected `phase1_latest_run.txt` path under `AppData\LocalLow\DefaultCompany\My project`.
+
+Additional validation after the coverage parser update:
+
+- `powershell -NoProfile -Command { .\scripts\run_phase1_playtest.ps1 -PrintPathsOnly }` exits with code `0`.
+- The script contains the `CoverageComplete` parser and warning text for incomplete coverage.
 
 ## Handoff
 
