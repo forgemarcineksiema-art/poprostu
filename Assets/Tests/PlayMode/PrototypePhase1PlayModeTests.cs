@@ -99,6 +99,37 @@ namespace ValleDePlata.Tests
             var summary = metrics.BuildSummary();
             Assert.That(summary, Does.Contain("Phase 1 Feel Prototype Run"));
             Assert.That(summary, Does.Contain("Interactions: 1"));
+            Assert.That(summary, Does.Contain("ManualFeelGate: Required"));
+        }
+
+        [UnityTest]
+        public IEnumerator MetricsCoverageGateRequiresAllPhase1Beats()
+        {
+            SceneManager.LoadScene("Phase1_FeelPrototype");
+            yield return null;
+
+            var metrics = Object.FindAnyObjectByType<PrototypeRunMetrics>();
+            Assert.That(metrics, Is.Not.Null);
+
+            metrics.ResetRun();
+            Assert.That(metrics.HasRouteCoverage, Is.False);
+            Assert.That(metrics.BuildMissingCoverageSummary(), Does.Contain("enter car"));
+            Assert.That(metrics.BuildMissingCoverageSummary(), Does.Contain("safe return"));
+
+            metrics.RecordVehicleEnter();
+            metrics.RecordSpeed(4f);
+            metrics.RecordPressureEnter();
+            metrics.RecordInteraction("Inspect workshop shutter");
+            metrics.RecordCheckpoint("Safe return", true);
+
+            Assert.That(metrics.HasRouteCoverage, Is.False, "Coverage must still require exiting the vehicle.");
+            Assert.That(metrics.BuildMissingCoverageSummary(), Does.Contain("exit car"));
+
+            metrics.RecordVehicleExit();
+
+            Assert.That(metrics.HasRouteCoverage, Is.True);
+            Assert.That(metrics.BuildMissingCoverageSummary(), Is.EqualTo("none"));
+            Assert.That(metrics.BuildSummary(), Does.Contain("CoverageComplete: True"));
         }
     }
 }

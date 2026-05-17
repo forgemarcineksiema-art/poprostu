@@ -37,8 +37,8 @@ namespace ValleDePlata.Prototype
                 $"Checkpoint: {PrototypeDebugState.LastCheckpoint}\n" +
                 $"Metrics: {PrototypeDebugState.Metrics}";
 
-            GUI.Box(new Rect(16, 16, 540, 285), GUIContent.none);
-            GUI.Label(new Rect(20, 20, 530, 280), text, style);
+            GUI.Box(new Rect(16, 16, 680, 315), GUIContent.none);
+            GUI.Label(new Rect(20, 20, 670, 310), text, style);
         }
     }
 }

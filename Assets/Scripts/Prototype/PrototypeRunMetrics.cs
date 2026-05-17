@@ -24,6 +24,15 @@ namespace ValleDePlata.Prototype
         public string LastInteraction { get; private set; } = "None";
         public string LastCheckpoint { get; private set; } = "None";
         public string LastReportPath { get; private set; } = "Not written";
+        public bool HasRouteCoverage =>
+            VehicleEntryCount > 0
+            && VehicleExitCount > 0
+            && InteractionCount > 0
+            && PressureEntryCount > 0
+            && RouteCompleted
+            && MaxSpeed >= 1f;
+
+        public string CoverageStatus => HasRouteCoverage ? "Coverage complete" : $"Missing: {BuildMissingCoverageSummary()}";
 
         public void ResetRun()
         {
@@ -94,7 +103,22 @@ namespace ValleDePlata.Prototype
                 $"RouteCompleted: {RouteCompleted}",
                 $"MaxSpeed: {MaxSpeed.ToString("0.0", CultureInfo.InvariantCulture)}",
                 $"LastInteraction: {LastInteraction}",
-                $"LastCheckpoint: {LastCheckpoint}");
+                $"LastCheckpoint: {LastCheckpoint}",
+                $"CoverageComplete: {HasRouteCoverage}",
+                $"CoverageStatus: {CoverageStatus}",
+                "ManualFeelGate: Required");
+        }
+
+        public string BuildMissingCoverageSummary()
+        {
+            var missing = string.Empty;
+            AppendMissing(ref missing, VehicleEntryCount > 0, "enter car");
+            AppendMissing(ref missing, VehicleExitCount > 0, "exit car");
+            AppendMissing(ref missing, MaxSpeed >= 1f, "drive");
+            AppendMissing(ref missing, PressureEntryCount > 0, "pressure");
+            AppendMissing(ref missing, InteractionCount > 0, "interaction");
+            AppendMissing(ref missing, RouteCompleted, "safe return");
+            return string.IsNullOrEmpty(missing) ? "none" : missing;
         }
 
         public void WriteReport()
@@ -136,7 +160,23 @@ namespace ValleDePlata.Prototype
         {
             PrototypeDebugState.Metrics =
                 $"t {ElapsedSeconds:0}s | car {VehicleEntryCount}/{VehicleExitCount} | " +
-                $"cp {CompletedCheckpointCount} | pressure {PressureEntryCount} | int {InteractionCount}";
+                $"cp {CompletedCheckpointCount} | pressure {PressureEntryCount} | int {InteractionCount} | " +
+                (HasRouteCoverage ? "coverage OK" : $"missing {BuildMissingCoverageSummary()}");
+        }
+
+        private static void AppendMissing(ref string target, bool passed, string label)
+        {
+            if (passed)
+            {
+                return;
+            }
+
+            if (!string.IsNullOrEmpty(target))
+            {
+                target += ", ";
+            }
+
+            target += label;
         }
     }
 }
