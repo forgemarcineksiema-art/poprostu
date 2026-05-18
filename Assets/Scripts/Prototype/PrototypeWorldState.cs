@@ -58,7 +58,9 @@ namespace ValleDePlata.Prototype
         PublicViolenceCommitted,
         BribeAccepted,
         MateoProtected,
-        MateoHumiliated
+        MateoHumiliated,
+        DirtyCashPickedUp,
+        FrontTakenUnderWatch
     }
 
     [Serializable]
@@ -208,6 +210,18 @@ namespace ValleDePlata.Prototype
                     break;
                 case PrototypeWorldEvent.MateoHumiliated:
                     LieutenantTrust = LieutenantTrust.Humiliated;
+                    break;
+                case PrototypeWorldEvent.DirtyCashPickedUp:
+                    DirtyCash = DirtyCashState.Carried;
+                    StatePressure = RaisePressure(StatePressure);
+                    break;
+                case PrototypeWorldEvent.FrontTakenUnderWatch:
+                    FrontControl = FrontControl.PabloWatched;
+                    DirtyCash = DirtyCashState.Hidden;
+                    RuleStyleDecision = RuleStyle.Favor;
+                    StatePressure = LieutenantTrust == LieutenantTrust.Trusted
+                        ? LowerPressure(StatePressure)
+                        : RaisePressure(StatePressure);
                     break;
             }
 

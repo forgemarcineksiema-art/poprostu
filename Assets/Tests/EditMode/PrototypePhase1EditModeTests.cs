@@ -36,6 +36,11 @@ namespace ValleDePlata.Tests
             RequireComponent<PrototypeInteractable>("Mateo humiliated test contact");
             RequireComponent<PrototypeWorldReactionMarker>("Mateo early warning marker");
             RequireComponent<PrototypeWorldReactionMarker>("Mateo late warning marker");
+            RequireComponent<PrototypeInteractable>("El Respiro dirty cash pickup");
+            RequireComponent<PrototypeInteractable>("El Respiro front takeover");
+            RequireComponent<PrototypeWorldReactionMarker>("Dirty cash carried marker");
+            RequireComponent<PrototypeWorldReactionMarker>("El Respiro Pablo watched marker");
+            RequireComponent<PrototypeWorldReactionMarker>("Barrio reaction to front marker");
             RequireComponent<PrototypeRouteProgress>("Phase 1 Route Progress");
             RequireObject("Narrow asphalt route");
             RequireObject("Tight corner block");
@@ -126,6 +131,38 @@ namespace ValleDePlata.Tests
 
                 Object.DestroyImmediate(worldObject);
             }
+        }
+
+        [Test]
+        public void Phase4FrontEventsGiveDirtyCashAndMateoAStateCost()
+        {
+            var worldObject = new GameObject("Front State Test");
+            var world = worldObject.AddComponent<PrototypeWorldState>();
+
+            world.ResetState();
+            world.ApplyEvent(PrototypeWorldEvent.DirtyCashPickedUp);
+
+            Assert.That(world.DirtyCash, Is.EqualTo(DirtyCashState.Carried));
+            Assert.That(world.StatePressure, Is.EqualTo(PressureLevel.Medium));
+            Assert.That(world.LastEvent, Is.EqualTo(PrototypeWorldEvent.DirtyCashPickedUp));
+
+            world.ApplyEvent(PrototypeWorldEvent.FrontTakenUnderWatch);
+
+            Assert.That(world.FrontControl, Is.EqualTo(FrontControl.PabloWatched));
+            Assert.That(world.DirtyCash, Is.EqualTo(DirtyCashState.Hidden));
+            Assert.That(world.RuleStyleDecision, Is.EqualTo(RuleStyle.Favor));
+            Assert.That(world.StatePressure, Is.EqualTo(PressureLevel.High));
+
+            world.ResetState();
+            world.ApplyEvent(PrototypeWorldEvent.MateoProtected);
+            world.ApplyEvent(PrototypeWorldEvent.DirtyCashPickedUp);
+            world.ApplyEvent(PrototypeWorldEvent.FrontTakenUnderWatch);
+
+            Assert.That(world.LieutenantTrust, Is.EqualTo(LieutenantTrust.Trusted));
+            Assert.That(world.FrontControl, Is.EqualTo(FrontControl.PabloWatched));
+            Assert.That(world.StatePressure, Is.EqualTo(PressureLevel.Low));
+
+            Object.DestroyImmediate(worldObject);
         }
 
         [Test]

@@ -70,6 +70,7 @@ namespace ValleDePlata.Editor
             CreatePublicViolenceMicrotest(rust, patrolBlue, routeGreen);
             CreateBribeMicrotest(rust, patrolBlue, routeGreen);
             CreateMateoMicrotest(rust, patrolBlue, routeGreen);
+            CreateFrontPrototypeMicrotest(rust, patrolBlue, routeGreen);
 
             var patrol = CreateCube("Pressure patrol marker", new Vector3(0f, 0.55f, 34f), new Vector3(2.2f, 1.1f, 2.2f), patrolBlue);
             patrol.GetComponent<Collider>().isTrigger = true;
@@ -185,6 +186,49 @@ namespace ValleDePlata.Editor
                 "Mateo withholds the warning until the patrol is close",
                 new Color(0.08f, 0.16f, 0.28f),
                 new Color(0.62f, 0.12f, 0.1f));
+        }
+
+        private static void CreateFrontPrototypeMicrotest(Material rust, Material patrolBlue, Material routeGreen)
+        {
+            var cash = CreateCube("El Respiro dirty cash pickup", new Vector3(2.8f, 0.35f, 45f), new Vector3(0.9f, 0.7f, 0.9f), routeGreen);
+            cash.AddComponent<PrototypeInteractable>().Configure(
+                "Pick up dirty cash",
+                "Dirty cash is now Pablo's risk",
+                PrototypeWorldEvent.DirtyCashPickedUp);
+
+            var front = CreateCube("El Respiro front takeover", new Vector3(3.55f, 1.3f, 47f), new Vector3(0.45f, 2.6f, 2.6f), rust);
+            front.AddComponent<PrototypeInteractable>().Configure(
+                "Secure El Respiro front",
+                "El Respiro works, but under watch",
+                PrototypeWorldEvent.FrontTakenUnderWatch);
+
+            AddReactionMarker(
+                PrototypeWorldEvent.DirtyCashPickedUp,
+                "Dirty cash carried marker",
+                new Vector3(1.3f, 0.45f, 45f),
+                new Vector3(1.2f, 0.9f, 1.2f),
+                routeGreen,
+                "Dirty cash is physically exposed until hidden",
+                new Color(0.18f, 0.42f, 0.32f),
+                new Color(0.86f, 0.62f, 0.2f));
+            AddReactionMarker(
+                PrototypeWorldEvent.FrontTakenUnderWatch,
+                "El Respiro Pablo watched marker",
+                new Vector3(4.4f, 1.4f, 47f),
+                new Vector3(0.3f, 2.8f, 2.8f),
+                patrolBlue,
+                "El Respiro changes hands with police eyes nearby",
+                new Color(0.08f, 0.16f, 0.28f),
+                new Color(0.22f, 0.56f, 0.38f));
+            AddReactionMarker(
+                PrototypeWorldEvent.FrontTakenUnderWatch,
+                "Barrio reaction to front marker",
+                new Vector3(-3.7f, 0.85f, 46.5f),
+                new Vector3(0.7f, 1.7f, 0.7f),
+                routeGreen,
+                "Barrio notices El Respiro now belongs to Pablo",
+                new Color(0.18f, 0.42f, 0.32f),
+                new Color(0.42f, 0.66f, 0.82f));
         }
 
         private static void AddReactionMarker(

@@ -37,6 +37,11 @@ namespace ValleDePlata.Editor
             RequireComponent<PrototypeInteractable>("Mateo humiliated test contact");
             RequireComponent<PrototypeWorldReactionMarker>("Mateo early warning marker");
             RequireComponent<PrototypeWorldReactionMarker>("Mateo late warning marker");
+            RequireComponent<PrototypeInteractable>("El Respiro dirty cash pickup");
+            RequireComponent<PrototypeInteractable>("El Respiro front takeover");
+            RequireComponent<PrototypeWorldReactionMarker>("Dirty cash carried marker");
+            RequireComponent<PrototypeWorldReactionMarker>("El Respiro Pablo watched marker");
+            RequireComponent<PrototypeWorldReactionMarker>("Barrio reaction to front marker");
             RequireComponent<PrototypeRouteProgress>("Phase 1 Route Progress");
 
             RequireObject("Narrow asphalt route");

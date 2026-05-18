@@ -324,5 +324,69 @@ namespace ValleDePlata.Tests
                 File.Delete(snapshotPath);
             }
         }
+
+        [UnityTest]
+        public IEnumerator Phase4FrontPrototypeChangesWorldAndVisibleMarkers()
+        {
+            SceneManager.LoadScene("Phase1_FeelPrototype");
+            yield return null;
+
+            var world = Object.FindAnyObjectByType<PrototypeWorldState>();
+            var cashPickup = GameObject.Find("El Respiro dirty cash pickup")?.GetComponent<PrototypeInteractable>();
+            var frontTakeover = GameObject.Find("El Respiro front takeover")?.GetComponent<PrototypeInteractable>();
+            var carriedMarker = GameObject.Find("Dirty cash carried marker")?.GetComponent<PrototypeWorldReactionMarker>();
+            var frontMarkers = Object.FindObjectsByType<PrototypeWorldReactionMarker>(FindObjectsSortMode.None)
+                .Where(marker => marker.ReactionMessage.Contains("El Respiro") || marker.ReactionMessage.Contains("Barrio notices"))
+                .ToArray();
+
+            Assert.That(world, Is.Not.Null);
+            Assert.That(cashPickup, Is.Not.Null);
+            Assert.That(frontTakeover, Is.Not.Null);
+            Assert.That(carriedMarker, Is.Not.Null);
+            Assert.That(frontMarkers.Length, Is.EqualTo(2));
+
+            cashPickup.Interact();
+            yield return null;
+
+            Assert.That(world.DirtyCash, Is.EqualTo(DirtyCashState.Carried));
+            Assert.That(world.StatePressure, Is.EqualTo(PressureLevel.Medium));
+            Assert.That(carriedMarker.Reacted, Is.True);
+
+            frontTakeover.Interact();
+            yield return null;
+
+            Assert.That(world.FrontControl, Is.EqualTo(FrontControl.PabloWatched));
+            Assert.That(world.DirtyCash, Is.EqualTo(DirtyCashState.Hidden));
+            Assert.That(world.RuleStyleDecision, Is.EqualTo(RuleStyle.Favor));
+            Assert.That(world.StatePressure, Is.EqualTo(PressureLevel.High));
+            Assert.That(frontMarkers.Count(marker => marker.Reacted), Is.EqualTo(2));
+        }
+
+        [UnityTest]
+        public IEnumerator Phase4TrustedMateoReducesFrontTakeoverPressure()
+        {
+            SceneManager.LoadScene("Phase1_FeelPrototype");
+            yield return null;
+
+            var world = Object.FindAnyObjectByType<PrototypeWorldState>();
+            var mateo = GameObject.Find("Mateo protected test contact")?.GetComponent<PrototypeInteractable>();
+            var cashPickup = GameObject.Find("El Respiro dirty cash pickup")?.GetComponent<PrototypeInteractable>();
+            var frontTakeover = GameObject.Find("El Respiro front takeover")?.GetComponent<PrototypeInteractable>();
+
+            Assert.That(world, Is.Not.Null);
+            Assert.That(mateo, Is.Not.Null);
+            Assert.That(cashPickup, Is.Not.Null);
+            Assert.That(frontTakeover, Is.Not.Null);
+
+            mateo.Interact();
+            cashPickup.Interact();
+            frontTakeover.Interact();
+            yield return null;
+
+            Assert.That(world.LieutenantTrust, Is.EqualTo(LieutenantTrust.Trusted));
+            Assert.That(world.FrontControl, Is.EqualTo(FrontControl.PabloWatched));
+            Assert.That(world.DirtyCash, Is.EqualTo(DirtyCashState.Hidden));
+            Assert.That(world.StatePressure, Is.EqualTo(PressureLevel.Low));
+        }
     }
 }
