@@ -189,6 +189,91 @@ namespace ValleDePlata.Tests
         }
 
         [UnityTest]
+        public IEnumerator OnFootMovementFollowsCameraYaw()
+        {
+            SceneManager.LoadScene("Phase1_FeelPrototype");
+            yield return null;
+
+            var player = Object.FindAnyObjectByType<PrototypePlayerController>();
+            var cameraRig = Object.FindAnyObjectByType<PrototypeCameraRig>();
+            Assert.That(player, Is.Not.Null);
+            Assert.That(cameraRig, Is.Not.Null);
+
+            cameraRig.SetYawForTests(90f);
+            var start = player.transform.position;
+            player.ApplyMovementForTests(Vector2.up, false, 0.5f);
+
+            var delta = player.transform.position - start;
+            Assert.That(delta.x, Is.GreaterThan(1.2f));
+            Assert.That(Mathf.Abs(delta.z), Is.LessThan(0.35f));
+        }
+
+        [UnityTest]
+        public IEnumerator CameraCollisionIgnoresPrototypeMarkersButHitsWorld()
+        {
+            var rigObject = new GameObject("Camera Collision Rig Test");
+            var rig = rigObject.AddComponent<PrototypeCameraRig>();
+            var pivot = Vector3.zero;
+            var desired = new Vector3(0f, 0f, -6f);
+
+            var marker = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            marker.name = "Ignored Marker";
+            marker.transform.position = new Vector3(0f, 0f, -2f);
+            marker.transform.localScale = Vector3.one;
+            marker.AddComponent<PrototypeWorldReactionMarker>();
+
+            var wall = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            wall.name = "World Wall";
+            wall.transform.position = new Vector3(0f, 0f, -4f);
+            wall.transform.localScale = new Vector3(4f, 4f, 0.5f);
+
+            Physics.SyncTransforms();
+            var corrected = rig.ResolveCollisionForTests(pivot, desired);
+
+            Assert.That(Vector3.Distance(pivot, corrected), Is.GreaterThan(3f));
+            Assert.That(Vector3.Distance(pivot, corrected), Is.LessThan(5.5f));
+
+            Object.Destroy(marker);
+            Object.Destroy(wall);
+            Object.Destroy(rigObject);
+            yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator VehicleBrakesBeforeReversing()
+        {
+            SceneManager.LoadScene("Phase1_FeelPrototype");
+            yield return null;
+
+            var player = Object.FindAnyObjectByType<PrototypePlayerController>();
+            var vehicle = Object.FindAnyObjectByType<PrototypeVehicleController>();
+            Assert.That(player, Is.Not.Null);
+            Assert.That(vehicle, Is.Not.Null);
+
+            player.EnterVehicle(vehicle);
+            var body = vehicle.GetComponent<Rigidbody>();
+
+            for (var i = 0; i < 60; i++)
+            {
+                vehicle.ApplyDriveInput(Vector2.up, false);
+                yield return new WaitForFixedUpdate();
+            }
+
+            var forwardSpeed = Vector3.Dot(body.linearVelocity, vehicle.transform.forward);
+            Assert.That(forwardSpeed, Is.GreaterThan(1f));
+
+            for (var i = 0; i < 20; i++)
+            {
+                vehicle.ApplyDriveInput(Vector2.down, false);
+                yield return new WaitForFixedUpdate();
+            }
+
+            var brakingSpeed = Vector3.Dot(body.linearVelocity, vehicle.transform.forward);
+            Assert.That(brakingSpeed, Is.GreaterThanOrEqualTo(0f));
+            Assert.That(brakingSpeed, Is.LessThan(forwardSpeed));
+        }
+
+        [UnityTest]
         public IEnumerator PublicViolenceMicrotestChangesWorldAndVisibleMarkers()
         {
             SceneManager.LoadScene("Phase1_FeelPrototype");

@@ -8,13 +8,17 @@ namespace ValleDePlata.Prototype
         [SerializeField] private Transform cameraPivot;
         [SerializeField] private float walkSpeed = 4.2f;
         [SerializeField] private float sprintSpeed = 6.4f;
+        [SerializeField] private float acceleration = 18f;
+        [SerializeField] private float deceleration = 22f;
         [SerializeField] private float turnSharpness = 14f;
         [SerializeField] private float gravity = -22f;
         [SerializeField] private float interactRadius = 2.25f;
         [SerializeField] private LayerMask interactMask = ~0;
 
         private CharacterController characterController;
+        private PrototypeCameraRig cameraRig;
         private PrototypeVehicleController currentVehicle;
+        private Vector3 horizontalVelocity;
         private Vector3 verticalVelocity;
 
         public bool IsDriving => currentVehicle != null;
@@ -29,6 +33,8 @@ namespace ValleDePlata.Prototype
 
             EnsureInitialized();
             currentVehicle = vehicle;
+            horizontalVelocity = Vector3.zero;
+            verticalVelocity = Vector3.zero;
             characterController.enabled = false;
             gameObject.SetActive(false);
             vehicle.Enter(this);
@@ -43,6 +49,8 @@ namespace ValleDePlata.Prototype
             gameObject.SetActive(true);
             characterController.enabled = true;
             currentVehicle = null;
+            horizontalVelocity = Vector3.zero;
+            verticalVelocity = Vector3.zero;
             PrototypeRunMetrics.Active?.RecordVehicleExit();
             PrototypeDebugState.Mode = "OnFoot";
         }
@@ -63,6 +71,11 @@ namespace ValleDePlata.Prototype
             {
                 cameraPivot = transform;
             }
+
+            if (cameraRig == null)
+            {
+                cameraRig = FindAnyObjectByType<PrototypeCameraRig>();
+            }
         }
 
         private void Update()
@@ -78,15 +91,44 @@ namespace ValleDePlata.Prototype
 
         private void UpdateMovement()
         {
-            var moveInput = PrototypeInput.Move;
-            var cameraForward = Vector3.ProjectOnPlane(cameraPivot.forward, Vector3.up).normalized;
-            var cameraRight = Vector3.ProjectOnPlane(cameraPivot.right, Vector3.up).normalized;
-            var desiredMove = cameraForward * moveInput.y + cameraRight * moveInput.x;
+            ApplyMovement(PrototypeInput.Move, PrototypeInput.SprintHeld, Time.deltaTime);
+        }
+
+        public void ApplyMovementForTests(Vector2 moveInput, bool sprintHeld, float deltaTime)
+        {
+            EnsureInitialized();
+            ApplyMovement(moveInput, sprintHeld, deltaTime);
+        }
+
+        public static Vector3 BuildCameraRelativeMove(Vector2 moveInput, Vector3 planarForward, Vector3 planarRight)
+        {
+            var cameraForward = Vector3.ProjectOnPlane(planarForward, Vector3.up);
+            var cameraRight = Vector3.ProjectOnPlane(planarRight, Vector3.up);
+
+            if (cameraForward.sqrMagnitude <= 0.001f)
+            {
+                cameraForward = Vector3.forward;
+            }
+
+            if (cameraRight.sqrMagnitude <= 0.001f)
+            {
+                cameraRight = Vector3.right;
+            }
+
+            var desiredMove = cameraForward.normalized * moveInput.y + cameraRight.normalized * moveInput.x;
+            return Vector3.ClampMagnitude(desiredMove, 1f);
+        }
+
+        private void ApplyMovement(Vector2 moveInput, bool sprintHeld, float deltaTime)
+        {
+            var cameraForward = cameraRig != null ? cameraRig.PlanarForward : Vector3.ProjectOnPlane(cameraPivot.forward, Vector3.up).normalized;
+            var cameraRight = cameraRig != null ? cameraRig.PlanarRight : Vector3.ProjectOnPlane(cameraPivot.right, Vector3.up).normalized;
+            var desiredMove = BuildCameraRelativeMove(moveInput, cameraForward, cameraRight);
 
             if (desiredMove.sqrMagnitude > 0.01f)
             {
                 var targetRotation = Quaternion.LookRotation(desiredMove, Vector3.up);
-                transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, turnSharpness * Time.deltaTime);
+                transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, turnSharpness * deltaTime);
             }
 
             if (characterController.isGrounded && verticalVelocity.y < 0f)
@@ -94,13 +136,15 @@ namespace ValleDePlata.Prototype
                 verticalVelocity.y = -1f;
             }
 
-            verticalVelocity.y += gravity * Time.deltaTime;
+            verticalVelocity.y += gravity * deltaTime;
 
-            var speed = PrototypeInput.SprintHeld ? sprintSpeed : walkSpeed;
-            var horizontal = Vector3.ClampMagnitude(desiredMove, 1f) * speed;
-            characterController.Move((horizontal + verticalVelocity) * Time.deltaTime);
+            var speed = sprintHeld ? sprintSpeed : walkSpeed;
+            var targetHorizontal = desiredMove * speed;
+            var rate = desiredMove.sqrMagnitude > 0.01f ? acceleration : deceleration;
+            horizontalVelocity = Vector3.MoveTowards(horizontalVelocity, targetHorizontal, rate * deltaTime);
+            characterController.Move((horizontalVelocity + verticalVelocity) * deltaTime);
 
-            PrototypeDebugState.Speed = horizontal.magnitude;
+            PrototypeDebugState.Speed = horizontalVelocity.magnitude;
             PrototypeDebugState.Focus = "On foot";
         }
 

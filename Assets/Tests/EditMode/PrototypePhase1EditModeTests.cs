@@ -48,6 +48,7 @@ namespace ValleDePlata.Tests
             RequireObject("Narrow asphalt route");
             RequireObject("Tight corner block");
             RequireObject("Safe return marker");
+            RequireObject("Fallback Exit Point");
             RequireRouteCheckpoint(0, "Start on foot");
             RequireRouteCheckpoint(1, "Enter vehicle lane");
             RequireRouteCheckpoint(2, "Patrol pressure turn");
@@ -275,6 +276,119 @@ namespace ValleDePlata.Tests
         }
 
         [Test]
+        public void CameraRigPlanarDirectionsFollowYaw()
+        {
+            var cameraObject = new GameObject("Camera Direction Test");
+            var cameraRig = cameraObject.AddComponent<PrototypeCameraRig>();
+
+            cameraRig.SetYawForTests(90f);
+
+            AssertVectorApproximately(cameraRig.PlanarForward, Vector3.right, 0.001f);
+            AssertVectorApproximately(cameraRig.PlanarRight, Vector3.back, 0.001f);
+            Assert.That(cameraRig.Yaw, Is.EqualTo(90f).Within(0.001f));
+
+            Object.DestroyImmediate(cameraObject);
+        }
+
+        [Test]
+        public void GamepadLookYawIsFrameRateIndependent()
+        {
+            var thirtyFpsYaw = 0f;
+            for (var i = 0; i < 30; i++)
+            {
+                thirtyFpsYaw += PrototypeCameraRig.CalculateYawDelta(Vector2.zero, Vector2.right, 0.12f, 150f, 1f / 30f);
+            }
+
+            var oneTwentyFpsYaw = 0f;
+            for (var i = 0; i < 120; i++)
+            {
+                oneTwentyFpsYaw += PrototypeCameraRig.CalculateYawDelta(Vector2.zero, Vector2.right, 0.12f, 150f, 1f / 120f);
+            }
+
+            Assert.That(oneTwentyFpsYaw, Is.EqualTo(thirtyFpsYaw).Within(0.001f));
+            Assert.That(thirtyFpsYaw, Is.EqualTo(150f).Within(0.001f));
+        }
+
+        [Test]
+        public void PlayerMovementUsesCameraPlanarAxes()
+        {
+            var desiredMove = PrototypePlayerController.BuildCameraRelativeMove(
+                Vector2.up,
+                Vector3.right,
+                Vector3.back);
+
+            AssertVectorApproximately(desiredMove, Vector3.right, 0.001f);
+        }
+
+        [Test]
+        public void PlayerSideMovementDoesNotSpiralWithBodyRotation()
+        {
+            var cameraForward = Vector3.forward;
+            var cameraRight = Vector3.right;
+            var firstMove = PrototypePlayerController.BuildCameraRelativeMove(Vector2.left, cameraForward, cameraRight);
+            var rotatedBodyWouldHaveChangedLocalRight = Quaternion.Euler(0f, -90f, 0f) * Vector3.right;
+            var secondMove = PrototypePlayerController.BuildCameraRelativeMove(Vector2.left, cameraForward, cameraRight);
+
+            AssertVectorApproximately(firstMove, Vector3.left, 0.001f);
+            AssertVectorApproximately(secondMove, Vector3.left, 0.001f);
+            Assert.That(rotatedBodyWouldHaveChangedLocalRight, Is.Not.EqualTo(cameraRight));
+        }
+
+        [Test]
+        public void VehicleExitUsesFallbackAndBlocksWhenBothSidesAreOccupied()
+        {
+            var vehicleObject = new GameObject("Vehicle Exit Safety Test");
+            vehicleObject.AddComponent<BoxCollider>();
+            vehicleObject.AddComponent<Rigidbody>();
+            var vehicle = vehicleObject.AddComponent<PrototypeVehicleController>();
+            vehicleObject.transform.position = Vector3.zero;
+            vehicleObject.transform.rotation = Quaternion.identity;
+
+            var leftExit = new GameObject("Left Exit").transform;
+            leftExit.SetParent(vehicleObject.transform);
+            leftExit.localPosition = new Vector3(-1.8f, 0.2f, 0f);
+
+            var rightExit = new GameObject("Right Exit").transform;
+            rightExit.SetParent(vehicleObject.transform);
+            rightExit.localPosition = new Vector3(1.8f, 0.2f, 0f);
+
+            vehicle.SetExitPointsForTests(leftExit, rightExit);
+
+            var leftBlocker = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            leftBlocker.name = "Left Exit Blocker";
+            leftBlocker.transform.position = leftExit.position;
+            leftBlocker.transform.localScale = Vector3.one;
+
+            Assert.That(vehicle.TryResolveExitPose(out var fallbackPosition, out _), Is.True);
+            AssertVectorApproximately(fallbackPosition, rightExit.position, 0.001f);
+
+            var rightBlocker = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            rightBlocker.name = "Right Exit Blocker";
+            rightBlocker.transform.position = rightExit.position;
+            rightBlocker.transform.localScale = Vector3.one;
+
+            Assert.That(vehicle.TryResolveExitPose(out _, out _), Is.False);
+
+            Object.DestroyImmediate(rightBlocker);
+            Object.DestroyImmediate(leftBlocker);
+            Object.DestroyImmediate(vehicleObject);
+        }
+
+        [Test]
+        public void VehicleDriveIntentBrakesBeforeReverse()
+        {
+            var brakeIntent = PrototypeVehicleController.ResolveDriveIntent(-1f, 4f, 0.35f);
+            Assert.That(brakeIntent.Throttle, Is.EqualTo(0f));
+            Assert.That(brakeIntent.Brake, Is.GreaterThan(0f));
+            Assert.That(brakeIntent.Reverse, Is.EqualTo(0f));
+
+            var reverseIntent = PrototypeVehicleController.ResolveDriveIntent(-1f, 0.1f, 0.35f);
+            Assert.That(reverseIntent.Throttle, Is.EqualTo(0f));
+            Assert.That(reverseIntent.Brake, Is.EqualTo(0f));
+            Assert.That(reverseIntent.Reverse, Is.GreaterThan(0f));
+        }
+
+        [Test]
         public void Phase1SceneIsInBuildSettings()
         {
             var found = false;
@@ -326,6 +440,11 @@ namespace ValleDePlata.Tests
             var checkpoint = RequireComponent<PrototypeRouteCheckpoint>($"Route checkpoint {index}: {label}");
             Assert.That(checkpoint.CheckpointIndex, Is.EqualTo(index));
             Assert.That(checkpoint.Label, Is.EqualTo(label));
+        }
+
+        private static void AssertVectorApproximately(Vector3 actual, Vector3 expected, float tolerance)
+        {
+            Assert.That(Vector3.Distance(actual, expected), Is.LessThanOrEqualTo(tolerance), $"Expected {expected}, got {actual}.");
         }
     }
 }

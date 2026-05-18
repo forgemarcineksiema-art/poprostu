@@ -306,6 +306,11 @@ namespace ValleDePlata.Editor
             exitPoint.SetParent(vehicle.transform);
             exitPoint.localPosition = new Vector3(-1.8f, 0.2f, -0.6f);
             SetObjectReference(controller, "exitPoint", exitPoint);
+
+            var fallbackExitPoint = new GameObject("Fallback Exit Point").transform;
+            fallbackExitPoint.SetParent(vehicle.transform);
+            fallbackExitPoint.localPosition = new Vector3(1.8f, 0.2f, -0.6f);
+            SetObjectReference(controller, "fallbackExitPoint", fallbackExitPoint);
         }
 
         private static void CreateRoute(Material routeGreen)

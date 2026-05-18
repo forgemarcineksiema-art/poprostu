@@ -49,21 +49,25 @@ namespace ValleDePlata.Prototype
         {
             get
             {
+                return LookMouseDelta + LookGamepad * 18f;
+            }
+        }
+
+        public static Vector2 LookMouseDelta
+        {
+            get
+            {
                 var mouse = Mouse.current;
+                return mouse != null ? mouse.delta.ReadValue() : Vector2.zero;
+            }
+        }
+
+        public static Vector2 LookGamepad
+        {
+            get
+            {
                 var gamepad = Gamepad.current;
-                var look = Vector2.zero;
-
-                if (mouse != null)
-                {
-                    look += mouse.delta.ReadValue();
-                }
-
-                if (gamepad != null)
-                {
-                    look += gamepad.rightStick.ReadValue() * 18f;
-                }
-
-                return look;
+                return gamepad != null ? gamepad.rightStick.ReadValue() : Vector2.zero;
             }
         }
 
