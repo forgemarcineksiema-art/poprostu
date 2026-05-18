@@ -12,6 +12,7 @@ $repoRoot = Split-Path -Parent $scriptRoot
 $verifyScript = Join-Path $scriptRoot "verify_phase1.ps1"
 $playtestScript = Join-Path $scriptRoot "run_phase1_playtest.ps1"
 $reportScript = Join-Path $scriptRoot "new_phase1_playtest_report.ps1"
+$decisionScript = Join-Path $scriptRoot "check_phase1_manual_decision.ps1"
 
 function Write-ManualChecklist {
     Write-Host "Manual playtest route:"
@@ -41,6 +42,7 @@ Write-Host "Repo:        $repoRoot"
 Write-Host "Verify:      $verifyScript"
 Write-Host "Playtest:    $playtestScript"
 Write-Host "Report:      $reportScript"
+Write-Host "Decision:    $decisionScript"
 Write-Host ""
 Write-Host "Sequence:"
 
@@ -59,6 +61,7 @@ if ($SkipVerify -and -not $SkipBuild) {
 }
 
 Write-Host "  3. Generate manual feel report."
+Write-Host "  4. Check whether the report decision allows Phase 2."
 Write-Host ""
 Write-ManualChecklist
 Write-Host ""
@@ -85,4 +88,5 @@ if ($SkipVerify -and -not $SkipBuild) {
 & $reportScript
 
 Write-Host ""
-Write-Host "Phase 1 manual gate finished. Review the generated report before deciding on Phase 2."
+Write-Host "Phase 1 manual gate finished. Fill the generated report, then run:"
+Write-Host "  powershell -NoProfile -ExecutionPolicy Bypass -File scripts\check_phase1_manual_decision.ps1"
