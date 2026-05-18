@@ -8,7 +8,7 @@ namespace ValleDePlata.Editor
     public static class PrototypeSceneCapture
     {
         private const string ScenePath = "Assets/Scenes/Phase1_FeelPrototype.unity";
-        private const string CapturePath = "docs/prototype_reports/vertical_slice_presentation_pass_0_2_2026-05-18.png";
+        private const string CapturePath = "docs/prototype_reports/vertical_slice_readability_pass_0_3_2026-05-18.png";
 
         [MenuItem("Valle de Plata/Capture Phase 1 Believability Overview")]
         public static void CapturePhase1BelievabilityOverview()

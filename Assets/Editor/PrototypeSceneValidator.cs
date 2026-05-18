@@ -56,6 +56,11 @@ namespace ValleDePlata.Editor
             RequireComponent<PrototypeInteractable>("Dirty cash seizure failstate");
             RequireComponent<PrototypeWorldReactionMarker>("Seized cash partial failure marker");
             RequireComponent<PrototypeRouteProgress>("Phase 1 Route Progress");
+            RequireComponent<PrototypeReadableProp>("Barrio street identity prop");
+            RequireComponent<PrototypeReadableProp>("Safe return readable prop");
+            RequireComponent<PrototypeReadableProp>("Rios checkpoint readable prop");
+            RequireComponent<PrototypeReadableProp>("Police roadblock readable prop");
+            RequireComponent<PrototypeReadableProp>("El Respiro readable prop");
 
             RequireObject("Narrow asphalt route");
             RequireObject("Tight corner block");
@@ -72,9 +77,17 @@ namespace ValleDePlata.Editor
             RequireNonBlockingDressing("Witness balcony cluster");
             RequireNonBlockingDressing("Rios checkpoint desk");
             RequireNonBlockingDressing("Rios checkpoint awning");
+            RequireNonBlockingDressing("Rios checkpoint stool");
+            RequireNonBlockingDressing("Rios checkpoint papers");
             RequireNonBlockingDressing("Police roadblock barricade left");
             RequireNonBlockingDressing("Police roadblock barricade right");
+            RequireNonBlockingDressing("Police roadblock cone left");
+            RequireNonBlockingDressing("Police roadblock cone right");
             RequireNonBlockingDressing("El Respiro workshop sign");
+            RequireNonBlockingDressing("El Respiro shutter slat 0");
+            RequireNonBlockingDressing("El Respiro shutter slat 1");
+            RequireNonBlockingDressing("El Respiro shutter slat 2");
+            RequireNonBlockingDressing("El Respiro door lamp");
             RequireNonBlockingDressing("Rooftop water tank");
             RequireNonBlockingDressing("Barrio crate stack");
             RequireNonBlockingDressing("Left sunlit plaster facade");

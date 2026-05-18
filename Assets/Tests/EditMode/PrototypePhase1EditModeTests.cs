@@ -140,6 +140,21 @@ namespace ValleDePlata.Tests
         }
 
         [Test]
+        public void Phase1SceneGroupsReadableLandmarksIntoAuthoringProps()
+        {
+            EditorSceneManager.OpenScene(ScenePath);
+
+            var propType = System.Type.GetType("ValleDePlata.Prototype.PrototypeReadableProp, ValleDePlata.Prototype");
+            Assert.That(propType, Is.Not.Null, "PrototypeReadableProp type is missing.");
+
+            RequireReadablePropGroup("Barrio street identity prop", 8);
+            RequireReadablePropGroup("Safe return readable prop", 4);
+            RequireReadablePropGroup("Rios checkpoint readable prop", 4);
+            RequireReadablePropGroup("Police roadblock readable prop", 6);
+            RequireReadablePropGroup("El Respiro readable prop", 6);
+        }
+
+        [Test]
         public void Phase2EventsChangeWorldState()
         {
             var worldObject = new GameObject("World State Test");
@@ -874,6 +889,21 @@ namespace ValleDePlata.Tests
             Assert.That(target.layer, Is.EqualTo(PrototypeLayers.CameraIgnore), $"{objectName} should be on CameraIgnore so it cannot shorten the camera.");
             var collider = target.GetComponent<Collider>();
             Assert.That(collider == null || collider.enabled == false || collider.isTrigger, Is.True, $"{objectName} should not block the player, vehicle, or exit checks.");
+            return target;
+        }
+
+        private static GameObject RequireReadablePropGroup(string objectName, int minimumRenderers)
+        {
+            var target = RequireObject(objectName);
+            Assert.That(target.layer, Is.EqualTo(PrototypeLayers.CameraIgnore), $"{objectName} should stay out of camera collision.");
+            Assert.That(HasComponentNamed(target, "PrototypeReadableProp"), Is.True, $"{objectName} needs readable prop metadata.");
+            Assert.That(target.GetComponentsInChildren<Renderer>().Length, Is.GreaterThanOrEqualTo(minimumRenderers));
+
+            foreach (var collider in target.GetComponentsInChildren<Collider>())
+            {
+                Assert.That(collider.enabled == false || collider.isTrigger, Is.True, $"{objectName} contains a blocking collider on {collider.name}.");
+            }
+
             return target;
         }
 
