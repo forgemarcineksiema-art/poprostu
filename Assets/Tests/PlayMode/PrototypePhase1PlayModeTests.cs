@@ -700,6 +700,78 @@ namespace ValleDePlata.Tests
         }
 
         [UnityTest]
+        public IEnumerator Phase2RPlayablePressureChoiceBribeLetsVehicleThroughPressureZone()
+        {
+            SceneManager.LoadScene("Phase1_FeelPrototype");
+            yield return null;
+
+            var world = Object.FindAnyObjectByType<PrototypeWorldState>();
+            var mission = Object.FindAnyObjectByType<PrototypeMissionSpine>();
+            var marker = Object.FindAnyObjectByType<PrototypeObjectiveMarker>();
+            var vehicle = Object.FindAnyObjectByType<PrototypeVehicleController>();
+            var choice = Object.FindAnyObjectByType<PrototypePressureChoiceController>();
+            var pressureZone = GameObject.Find("Pressure patrol marker");
+            var violenceTarget = GameObject.Find("Public violence test target")?.GetComponent<PrototypeInteractable>();
+            var bribeOfficer = GameObject.Find("Rios bribe test officer")?.GetComponent<PrototypeInteractable>();
+
+            Assert.That(world, Is.Not.Null);
+            Assert.That(mission, Is.Not.Null);
+            Assert.That(marker, Is.Not.Null);
+            Assert.That(vehicle, Is.Not.Null);
+            Assert.That(choice, Is.Not.Null);
+            Assert.That(pressureZone, Is.Not.Null);
+            Assert.That(violenceTarget, Is.Not.Null);
+            Assert.That(bribeOfficer, Is.Not.Null);
+
+            violenceTarget.Interact();
+            bribeOfficer.Interact();
+            yield return MoveVehicleIntoPressureZone(vehicle, pressureZone.transform);
+            marker.Refresh();
+
+            Assert.That(world.LastEvent, Is.EqualTo(PrototypeWorldEvent.BribeAccepted));
+            Assert.That(world.StatePressure, Is.EqualTo(PressureLevel.Low));
+            Assert.That(mission.Stage, Is.EqualTo(PrototypeMissionStage.PressureContained));
+            Assert.That(marker.CurrentObjective, Is.EqualTo("Objective: pressure contained, continue to El Respiro"));
+            Assert.That(choice.LastResolution, Is.EqualTo(PrototypePressureChoiceResolution.Contained));
+        }
+
+        [UnityTest]
+        public IEnumerator Phase2RPlayablePressureChoiceUncontainedZoneEntryTriggersCrackdown()
+        {
+            SceneManager.LoadScene("Phase1_FeelPrototype");
+            yield return null;
+
+            var world = Object.FindAnyObjectByType<PrototypeWorldState>();
+            var mission = Object.FindAnyObjectByType<PrototypeMissionSpine>();
+            var marker = Object.FindAnyObjectByType<PrototypeObjectiveMarker>();
+            var vehicle = Object.FindAnyObjectByType<PrototypeVehicleController>();
+            var choice = Object.FindAnyObjectByType<PrototypePressureChoiceController>();
+            var playback = Object.FindAnyObjectByType<PrototypePressureScenePlayback>();
+            var pressureZone = GameObject.Find("Pressure patrol marker");
+            var violenceTarget = GameObject.Find("Public violence test target")?.GetComponent<PrototypeInteractable>();
+
+            Assert.That(world, Is.Not.Null);
+            Assert.That(mission, Is.Not.Null);
+            Assert.That(marker, Is.Not.Null);
+            Assert.That(vehicle, Is.Not.Null);
+            Assert.That(choice, Is.Not.Null);
+            Assert.That(playback, Is.Not.Null);
+            Assert.That(pressureZone, Is.Not.Null);
+            Assert.That(violenceTarget, Is.Not.Null);
+
+            violenceTarget.Interact();
+            yield return MoveVehicleIntoPressureZone(vehicle, pressureZone.transform);
+            marker.Refresh();
+
+            Assert.That(world.LastEvent, Is.EqualTo(PrototypeWorldEvent.PressureCrackdownTriggered));
+            Assert.That(world.StatePressure, Is.EqualTo(PressureLevel.High));
+            Assert.That(mission.Stage, Is.EqualTo(PrototypeMissionStage.PressureFailure));
+            Assert.That(marker.CurrentObjective, Is.EqualTo("Objective changed: escape the patrol pressure"));
+            Assert.That(choice.LastResolution, Is.EqualTo(PrototypePressureChoiceResolution.Crackdown));
+            Assert.That(playback.State, Is.EqualTo(PrototypePressurePlaybackState.Crackdown));
+        }
+
+        [UnityTest]
         public IEnumerator BribeMicrotestReducesPressureAndLeavesVisibleLeverage()
         {
             SceneManager.LoadScene("Phase1_FeelPrototype");
@@ -928,6 +1000,27 @@ namespace ValleDePlata.Tests
             Assert.That(mission.Stage, Is.EqualTo(PrototypeMissionStage.PartialFailure));
             Assert.That(failureMarker.Reacted, Is.True);
             Assert.That(PrototypeDebugState.Mission, Does.Contain("partial failure"));
+        }
+
+        private static IEnumerator MoveVehicleIntoPressureZone(PrototypeVehicleController vehicle, Transform pressureZone)
+        {
+            var body = vehicle.GetComponent<Rigidbody>();
+            Assert.That(body, Is.Not.Null);
+
+            body.linearVelocity = Vector3.zero;
+            body.angularVelocity = Vector3.zero;
+            body.position = pressureZone.position + Vector3.back * 6f;
+            vehicle.transform.position = body.position;
+            Physics.SyncTransforms();
+            yield return new WaitForFixedUpdate();
+
+            body.linearVelocity = Vector3.zero;
+            body.angularVelocity = Vector3.zero;
+            body.position = pressureZone.position;
+            vehicle.transform.position = body.position;
+            Physics.SyncTransforms();
+            yield return new WaitForFixedUpdate();
+            yield return null;
         }
     }
 }

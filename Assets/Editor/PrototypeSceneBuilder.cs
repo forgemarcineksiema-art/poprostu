@@ -83,7 +83,9 @@ namespace ValleDePlata.Editor
 
             var patrol = CreateCube("Pressure patrol marker", new Vector3(0f, 0.55f, 34f), new Vector3(2.2f, 1.1f, 2.2f), patrolBlue);
             patrol.GetComponent<Collider>().isTrigger = true;
-            patrol.AddComponent<PrototypePressureZone>();
+            var pressureZone = patrol.AddComponent<PrototypePressureZone>();
+            var pressureChoice = patrol.AddComponent<PrototypePressureChoiceController>();
+            SetObjectReference(pressureZone, "choiceController", pressureChoice);
             var playback = patrol.AddComponent<PrototypePressureScenePlayback>();
             SetObjectReference(playback, "patrolMarker", pressureMarker.transform);
             SetObjectReference(playback, "roadblockMarker", roadblock.transform);

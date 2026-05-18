@@ -26,6 +26,7 @@ namespace ValleDePlata.Tests
             RequireComponent<PrototypeMissionSpine>("Pierwszy Front Mission Spine");
             RequireComponent<PrototypeObjectiveMarker>("Prototype Objective Marker");
             RequireComponent<PrototypePressureZone>("Pressure patrol marker");
+            RequireComponent<PrototypePressureChoiceController>("Pressure patrol marker");
             RequireComponent<PrototypePressureScenePlayback>("Pressure patrol marker");
             RequireComponent<PrototypeInteractable>("Workshop shutter interactable");
             RequireComponent<PrototypeInteractable>("Public violence test target");
@@ -264,6 +265,35 @@ namespace ValleDePlata.Tests
             Assert.That(mission.ObjectivePrompt, Is.EqualTo("Objective changed: escape the patrol pressure"));
 
             Object.DestroyImmediate(missionObject);
+            Object.DestroyImmediate(worldObject);
+        }
+
+        [Test]
+        public void Phase2RPlayablePressureChoiceOnlyCracksDownWhenPressureIsUncontained()
+        {
+            var worldObject = new GameObject("Phase2R Pressure Choice World State Test");
+            var choiceObject = new GameObject("Phase2R Pressure Choice Test");
+            var world = worldObject.AddComponent<PrototypeWorldState>();
+            var choice = choiceObject.AddComponent<PrototypePressureChoiceController>();
+
+            choice.AttachWorldState(world);
+            world.ApplyEvent(PrototypeWorldEvent.PublicViolenceCommitted);
+
+            Assert.That(choice.ResolvePressureEntry(), Is.True);
+            Assert.That(choice.LastResolution, Is.EqualTo(PrototypePressureChoiceResolution.Crackdown));
+            Assert.That(world.LastEvent, Is.EqualTo(PrototypeWorldEvent.PressureCrackdownTriggered));
+            Assert.That(world.StatePressure, Is.EqualTo(PressureLevel.High));
+
+            world.ResetState();
+            world.ApplyEvent(PrototypeWorldEvent.PublicViolenceCommitted);
+            world.ApplyEvent(PrototypeWorldEvent.BribeAccepted);
+
+            Assert.That(choice.ResolvePressureEntry(), Is.False);
+            Assert.That(choice.LastResolution, Is.EqualTo(PrototypePressureChoiceResolution.Contained));
+            Assert.That(world.LastEvent, Is.EqualTo(PrototypeWorldEvent.BribeAccepted));
+            Assert.That(world.StatePressure, Is.EqualTo(PressureLevel.Low));
+
+            Object.DestroyImmediate(choiceObject);
             Object.DestroyImmediate(worldObject);
         }
 

@@ -31,6 +31,7 @@ namespace ValleDePlata.Editor
             RequireComponent<PrototypeMissionSpine>("Pierwszy Front Mission Spine");
             RequireComponent<PrototypeObjectiveMarker>("Prototype Objective Marker");
             RequireComponent<PrototypePressureZone>("Pressure patrol marker");
+            RequireComponent<PrototypePressureChoiceController>("Pressure patrol marker");
             RequireComponent<PrototypePressureScenePlayback>("Pressure patrol marker");
             RequireComponent<PrototypeInteractable>("Workshop shutter interactable");
             RequireComponent<PrototypeInteractable>("Public violence test target");
