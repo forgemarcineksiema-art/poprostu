@@ -131,5 +131,60 @@ namespace ValleDePlata.Tests
             Assert.That(metrics.BuildMissingCoverageSummary(), Is.EqualTo("none"));
             Assert.That(metrics.BuildSummary(), Does.Contain("CoverageComplete: True"));
         }
+
+        [UnityTest]
+        public IEnumerator SceneBeatsCanProduceCompleteCoverage()
+        {
+            SceneManager.LoadScene("Phase1_FeelPrototype");
+            yield return null;
+
+            var player = Object.FindAnyObjectByType<PrototypePlayerController>();
+            var vehicle = Object.FindAnyObjectByType<PrototypeVehicleController>();
+            var route = Object.FindAnyObjectByType<PrototypeRouteProgress>();
+            var metrics = Object.FindAnyObjectByType<PrototypeRunMetrics>();
+            var interactable = Object.FindAnyObjectByType<PrototypeInteractable>();
+            var checkpoints = Object.FindObjectsByType<PrototypeRouteCheckpoint>(FindObjectsSortMode.None)
+                .OrderBy(checkpoint => checkpoint.CheckpointIndex)
+                .ToArray();
+
+            Assert.That(player, Is.Not.Null);
+            Assert.That(vehicle, Is.Not.Null);
+            Assert.That(route, Is.Not.Null);
+            Assert.That(metrics, Is.Not.Null);
+            Assert.That(interactable, Is.Not.Null);
+            Assert.That(checkpoints.Length, Is.EqualTo(5));
+
+            metrics.ResetRun();
+            route.Configure(checkpoints.Length);
+            player.EnterVehicle(vehicle);
+
+            for (var i = 0; i < 30; i++)
+            {
+                vehicle.ApplyDriveInput(Vector2.up, false);
+                yield return new WaitForFixedUpdate();
+            }
+
+            var body = vehicle.GetComponent<Rigidbody>();
+            foreach (var checkpoint in checkpoints)
+            {
+                body.linearVelocity = Vector3.zero;
+                body.angularVelocity = Vector3.zero;
+                body.position = checkpoint.transform.position;
+                Physics.SyncTransforms();
+                yield return new WaitForFixedUpdate();
+            }
+
+            vehicle.ExitDriver();
+            interactable.Interact();
+
+            Assert.That(route.IsComplete, Is.True);
+            Assert.That(metrics.VehicleEntryCount, Is.EqualTo(1));
+            Assert.That(metrics.VehicleExitCount, Is.EqualTo(1));
+            Assert.That(metrics.PressureEntryCount, Is.GreaterThanOrEqualTo(1));
+            Assert.That(metrics.InteractionCount, Is.EqualTo(1));
+            Assert.That(metrics.HasRouteCoverage, Is.True);
+            Assert.That(metrics.CoverageStatus, Is.EqualTo("Coverage complete"));
+            Assert.That(metrics.BuildSummary(), Does.Contain("ManualFeelGate: Required"));
+        }
     }
 }
