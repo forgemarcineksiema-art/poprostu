@@ -78,10 +78,12 @@ namespace ValleDePlata.Prototype
         [SerializeField] private float maxPitch = 54f;
         [SerializeField] private float collisionRadius = 0.25f;
         [SerializeField] private LayerMask collisionMask = ~0;
+        [SerializeField] private float tightSpaceRecoveryHold = 0.35f;
 
         private float yaw;
         private float pitch = 16f;
         private float lookIdleTime;
+        private float tightSpaceRecoveryTimeRemaining;
 
         public Vector3 PlanarForward => (Quaternion.Euler(0f, yaw, 0f) * Vector3.forward).normalized;
         public Vector3 PlanarRight => (Quaternion.Euler(0f, yaw, 0f) * Vector3.right).normalized;
@@ -145,7 +147,16 @@ namespace ValleDePlata.Prototype
             var collisionOffset = Vector3.Distance(correctedPosition, desiredPosition);
             if (collisionOffset > 0.05f)
             {
-                CurrentMode = PrototypeCameraMode.TightSpaceRecovery;
+                tightSpaceRecoveryTimeRemaining = tightSpaceRecoveryHold;
+            }
+            else
+            {
+                tightSpaceRecoveryTimeRemaining = Mathf.Max(0f, tightSpaceRecoveryTimeRemaining - Time.deltaTime);
+            }
+
+            CurrentMode = ResolveModeWithTightSpace(targetMode, collisionOffset, tightSpaceRecoveryTimeRemaining);
+            if (CurrentMode == PrototypeCameraMode.TightSpaceRecovery)
+            {
                 CurrentProfile = BlendProfile(CurrentProfile, ResolveProfile(PrototypeCameraMode.TightSpaceRecovery), Time.deltaTime);
             }
 
@@ -175,6 +186,41 @@ namespace ValleDePlata.Prototype
             return mouseDelta.x * mouseSensitivity + gamepadLook.x * gamepadYawDegreesPerSecond * deltaTime;
         }
 
+        public static float CalculatePitchDelta(
+            Vector2 mouseDelta,
+            Vector2 gamepadLook,
+            float mouseSensitivity,
+            float gamepadPitchDegreesPerSecond,
+            float deltaTime)
+        {
+            return mouseDelta.y * mouseSensitivity + gamepadLook.y * gamepadPitchDegreesPerSecond * deltaTime;
+        }
+
+        public static float CalculateRecenterYaw(
+            float currentYaw,
+            float targetYaw,
+            float lookIdleTime,
+            PrototypeCameraProfile profile,
+            float deltaTime)
+        {
+            if (lookIdleTime < profile.RecenterDelay)
+            {
+                return currentYaw;
+            }
+
+            return Mathf.MoveTowardsAngle(currentYaw, targetYaw, profile.RecenterSpeed * deltaTime);
+        }
+
+        public static PrototypeCameraMode ResolveModeWithTightSpace(
+            PrototypeCameraMode targetMode,
+            float collisionOffset,
+            float recoveryTimeRemaining)
+        {
+            return collisionOffset > 0.05f || recoveryTimeRemaining > 0f
+                ? PrototypeCameraMode.TightSpaceRecovery
+                : targetMode;
+        }
+
         public static PrototypeCameraProfile ResolveProfile(PrototypeCameraMode mode)
         {
             return mode switch
@@ -195,16 +241,6 @@ namespace ValleDePlata.Prototype
 
             var blend = 1f - Mathf.Exp(-target.BlendSharpness * deltaTime);
             return PrototypeCameraProfile.Lerp(current, target, blend);
-        }
-
-        private static float CalculatePitchDelta(
-            Vector2 mouseDelta,
-            Vector2 gamepadLook,
-            float mouseSensitivity,
-            float gamepadPitchDegreesPerSecond,
-            float deltaTime)
-        {
-            return mouseDelta.y * mouseSensitivity + gamepadLook.y * gamepadPitchDegreesPerSecond * deltaTime;
         }
 
         private PrototypeCameraMode ResolveTargetMode()
@@ -238,7 +274,7 @@ namespace ValleDePlata.Prototype
             }
 
             var targetYaw = Mathf.Atan2(pivotForward.x, pivotForward.z) * Mathf.Rad2Deg;
-            yaw = Mathf.MoveTowardsAngle(yaw, targetYaw, profile.RecenterSpeed * deltaTime);
+            yaw = CalculateRecenterYaw(yaw, targetYaw, lookIdleTime, profile, deltaTime);
         }
 
         private Vector3 ResolveCollision(Vector3 pivotPosition, Vector3 desiredPosition)

@@ -316,6 +316,56 @@ namespace ValleDePlata.Tests
         }
 
         [Test]
+        public void MouseLookStaysRawWhileGamepadPitchScalesWithTime()
+        {
+            var mouseAtThirtyFps = PrototypeCameraRig.CalculateYawDelta(Vector2.right * 10f, Vector2.zero, 0.12f, 150f, 1f / 30f);
+            var mouseAtOneTwentyFps = PrototypeCameraRig.CalculateYawDelta(Vector2.right * 10f, Vector2.zero, 0.12f, 150f, 1f / 120f);
+            Assert.That(mouseAtOneTwentyFps, Is.EqualTo(mouseAtThirtyFps).Within(0.001f));
+
+            var thirtyFpsPitch = 0f;
+            for (var i = 0; i < 30; i++)
+            {
+                thirtyFpsPitch += PrototypeCameraRig.CalculatePitchDelta(Vector2.zero, Vector2.up, 0.12f, 120f, 1f / 30f);
+            }
+
+            var oneTwentyFpsPitch = 0f;
+            for (var i = 0; i < 120; i++)
+            {
+                oneTwentyFpsPitch += PrototypeCameraRig.CalculatePitchDelta(Vector2.zero, Vector2.up, 0.12f, 120f, 1f / 120f);
+            }
+
+            Assert.That(oneTwentyFpsPitch, Is.EqualTo(thirtyFpsPitch).Within(0.001f));
+            Assert.That(thirtyFpsPitch, Is.EqualTo(120f).Within(0.001f));
+        }
+
+        [Test]
+        public void CameraRecenterWaitsForDelayThenMovesTowardPivotYaw()
+        {
+            var onFoot = PrototypeCameraRig.ResolveProfile(PrototypeCameraMode.OnFootFree);
+
+            var beforeDelay = PrototypeCameraRig.CalculateRecenterYaw(90f, 0f, onFoot.RecenterDelay - 0.01f, onFoot, 0.2f);
+            var afterDelay = PrototypeCameraRig.CalculateRecenterYaw(90f, 0f, onFoot.RecenterDelay + 0.01f, onFoot, 0.1f);
+
+            Assert.That(beforeDelay, Is.EqualTo(90f).Within(0.001f));
+            Assert.That(Mathf.Abs(Mathf.DeltaAngle(afterDelay, 0f)), Is.LessThan(Mathf.Abs(Mathf.DeltaAngle(90f, 0f))));
+            Assert.That(Mathf.Abs(Mathf.DeltaAngle(90f, afterDelay)), Is.LessThanOrEqualTo(onFoot.RecenterSpeed * 0.1f + 0.001f));
+        }
+
+        [Test]
+        public void CameraTightSpaceRecoveryHoldsBrieflyAfterCollisionClears()
+        {
+            Assert.That(
+                PrototypeCameraRig.ResolveModeWithTightSpace(PrototypeCameraMode.OnFootFree, 0.2f, 0f),
+                Is.EqualTo(PrototypeCameraMode.TightSpaceRecovery));
+            Assert.That(
+                PrototypeCameraRig.ResolveModeWithTightSpace(PrototypeCameraMode.OnFootFree, 0f, 0.2f),
+                Is.EqualTo(PrototypeCameraMode.TightSpaceRecovery));
+            Assert.That(
+                PrototypeCameraRig.ResolveModeWithTightSpace(PrototypeCameraMode.OnFootFree, 0f, 0f),
+                Is.EqualTo(PrototypeCameraMode.OnFootFree));
+        }
+
+        [Test]
         public void PlayerMovementUsesCameraPlanarAxes()
         {
             var desiredMove = PrototypePlayerController.BuildCameraRelativeMove(
