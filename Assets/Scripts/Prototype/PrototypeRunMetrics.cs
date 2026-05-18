@@ -24,6 +24,7 @@ namespace ValleDePlata.Prototype
         public string LastInteraction { get; private set; } = "None";
         public string LastCheckpoint { get; private set; } = "None";
         public string LastReportPath { get; private set; } = "Not written";
+        public PrototypeRouteOutcome RouteOutcome { get; private set; } = PrototypeRouteOutcome.InProgress;
         public bool HasRouteCoverage =>
             VehicleEntryCount > 0
             && VehicleExitCount > 0
@@ -47,6 +48,7 @@ namespace ValleDePlata.Prototype
             LastInteraction = "None";
             LastCheckpoint = "None";
             LastReportPath = "Not written";
+            RouteOutcome = PrototypeRouteOutcome.InProgress;
             UpdateDebugState();
         }
 
@@ -83,6 +85,12 @@ namespace ValleDePlata.Prototype
             UpdateDebugState();
         }
 
+        public void RecordRouteOutcome(PrototypeRouteOutcome outcome)
+        {
+            RouteOutcome = outcome;
+            UpdateDebugState();
+        }
+
         public void RecordSpeed(float speed)
         {
             MaxSpeed = Mathf.Max(MaxSpeed, speed);
@@ -101,6 +109,7 @@ namespace ValleDePlata.Prototype
                 $"PressureEntries: {PressureEntryCount}",
                 $"CompletedCheckpoints: {CompletedCheckpointCount}",
                 $"RouteCompleted: {RouteCompleted}",
+                $"RouteOutcome: {RouteOutcome}",
                 $"MaxSpeed: {MaxSpeed.ToString("0.0", CultureInfo.InvariantCulture)}",
                 $"LastInteraction: {LastInteraction}",
                 $"LastCheckpoint: {LastCheckpoint}",
@@ -171,6 +180,7 @@ namespace ValleDePlata.Prototype
             PrototypeDebugState.Metrics =
                 $"t {ElapsedSeconds:0}s | car {VehicleEntryCount}/{VehicleExitCount} | " +
                 $"cp {CompletedCheckpointCount} | pressure {PressureEntryCount} | int {InteractionCount} | " +
+                $"{RouteOutcome} | " +
                 (HasRouteCoverage ? "coverage OK" : $"missing {BuildMissingCoverageSummary()}");
         }
 

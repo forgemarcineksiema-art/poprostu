@@ -688,6 +688,68 @@ namespace ValleDePlata.Tests
             Assert.That(PrototypeDebugState.LastCheckpoint, Is.EqualTo("Start on foot"));
         }
 
+        [Test]
+        public void RouteProgressContainedPressureCanCompleteNormalRoute()
+        {
+            var worldObject = new GameObject("Contained Route Gate World State Test");
+            var routeObject = new GameObject("Contained Route Gate Test");
+            var world = worldObject.AddComponent<PrototypeWorldState>();
+            var route = routeObject.AddComponent<PrototypeRouteProgress>();
+
+            route.AttachWorldState(world);
+            route.Configure(5);
+            world.ApplyEvent(PrototypeWorldEvent.PublicViolenceCommitted);
+            world.ApplyEvent(PrototypeWorldEvent.BribeAccepted);
+
+            route.RegisterCheckpoint(0, "Start on foot");
+            route.RegisterCheckpoint(1, "Enter vehicle lane");
+            route.RegisterCheckpoint(2, "Patrol pressure turn");
+            route.RegisterCheckpoint(3, "Workshop interaction stop");
+            route.RegisterCheckpoint(4, "Safe return");
+
+            Assert.That(route.IsComplete, Is.True);
+            Assert.That(route.Outcome, Is.EqualTo(PrototypeRouteOutcome.PressureContained));
+            Assert.That(PrototypeDebugState.Route, Is.EqualTo("Complete"));
+
+            Object.DestroyImmediate(routeObject);
+            Object.DestroyImmediate(worldObject);
+        }
+
+        [Test]
+        public void RouteProgressCrackdownBlocksForwardRouteButAllowsSafeReturnEscape()
+        {
+            var worldObject = new GameObject("Crackdown Route Gate World State Test");
+            var routeObject = new GameObject("Crackdown Route Gate Test");
+            var world = worldObject.AddComponent<PrototypeWorldState>();
+            var route = routeObject.AddComponent<PrototypeRouteProgress>();
+
+            route.AttachWorldState(world);
+            route.Configure(5);
+
+            route.RegisterCheckpoint(0, "Start on foot");
+            route.RegisterCheckpoint(1, "Enter vehicle lane");
+            route.RegisterCheckpoint(2, "Patrol pressure turn");
+            world.ApplyEvent(PrototypeWorldEvent.PublicViolenceCommitted);
+            world.ApplyEvent(PrototypeWorldEvent.PressureCrackdownTriggered);
+
+            route.RegisterCheckpoint(3, "Workshop interaction stop");
+
+            Assert.That(route.NextCheckpointIndex, Is.EqualTo(3));
+            Assert.That(route.IsComplete, Is.False);
+            Assert.That(route.Outcome, Is.EqualTo(PrototypeRouteOutcome.PressureBlocked));
+            Assert.That(PrototypeDebugState.Route, Does.Contain("blocked"));
+
+            route.RegisterCheckpoint(4, "Safe return");
+
+            Assert.That(route.IsComplete, Is.False);
+            Assert.That(route.Outcome, Is.EqualTo(PrototypeRouteOutcome.PressureFailureEscape));
+            Assert.That(PrototypeDebugState.Route, Does.Contain("Pressure escape"));
+            Assert.That(PrototypeDebugState.LastCheckpoint, Is.EqualTo("Safe return"));
+
+            Object.DestroyImmediate(routeObject);
+            Object.DestroyImmediate(worldObject);
+        }
+
         private static void RequireObject(string objectName)
         {
             Assert.That(GameObject.Find(objectName), Is.Not.Null, $"Missing required object: {objectName}");

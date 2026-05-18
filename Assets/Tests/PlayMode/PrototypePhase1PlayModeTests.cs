@@ -772,6 +772,97 @@ namespace ValleDePlata.Tests
         }
 
         [UnityTest]
+        public IEnumerator Phase2RContainedPressureRouteCompletesNormalCoverage()
+        {
+            SceneManager.LoadScene("Phase1_FeelPrototype");
+            yield return null;
+
+            var player = Object.FindAnyObjectByType<PrototypePlayerController>();
+            var vehicle = Object.FindAnyObjectByType<PrototypeVehicleController>();
+            var route = Object.FindAnyObjectByType<PrototypeRouteProgress>();
+            var metrics = Object.FindAnyObjectByType<PrototypeRunMetrics>();
+            var violenceTarget = GameObject.Find("Public violence test target")?.GetComponent<PrototypeInteractable>();
+            var bribeOfficer = GameObject.Find("Rios bribe test officer")?.GetComponent<PrototypeInteractable>();
+            var checkpoints = Object.FindObjectsByType<PrototypeRouteCheckpoint>(FindObjectsSortMode.None)
+                .OrderBy(checkpoint => checkpoint.CheckpointIndex)
+                .ToArray();
+
+            Assert.That(player, Is.Not.Null);
+            Assert.That(vehicle, Is.Not.Null);
+            Assert.That(route, Is.Not.Null);
+            Assert.That(metrics, Is.Not.Null);
+            Assert.That(violenceTarget, Is.Not.Null);
+            Assert.That(bribeOfficer, Is.Not.Null);
+            Assert.That(checkpoints.Length, Is.EqualTo(5));
+
+            metrics.ResetRun();
+            route.Configure(checkpoints.Length);
+            player.EnterVehicle(vehicle);
+            metrics.RecordSpeed(4f);
+            violenceTarget.Interact();
+            bribeOfficer.Interact();
+
+            foreach (var checkpoint in checkpoints)
+            {
+                yield return MoveVehicleToTransform(vehicle, checkpoint.transform);
+            }
+
+            vehicle.ExitDriver();
+
+            Assert.That(route.IsComplete, Is.True);
+            Assert.That(route.Outcome, Is.EqualTo(PrototypeRouteOutcome.PressureContained));
+            Assert.That(metrics.RouteCompleted, Is.True);
+            Assert.That(metrics.RouteOutcome, Is.EqualTo(PrototypeRouteOutcome.PressureContained));
+            Assert.That(metrics.HasRouteCoverage, Is.True);
+        }
+
+        [UnityTest]
+        public IEnumerator Phase2RPressureFailureBlocksNormalRouteAndSafeReturnBecomesEscape()
+        {
+            SceneManager.LoadScene("Phase1_FeelPrototype");
+            yield return null;
+
+            var vehicle = Object.FindAnyObjectByType<PrototypeVehicleController>();
+            var route = Object.FindAnyObjectByType<PrototypeRouteProgress>();
+            var metrics = Object.FindAnyObjectByType<PrototypeRunMetrics>();
+            var violenceTarget = GameObject.Find("Public violence test target")?.GetComponent<PrototypeInteractable>();
+            var checkpoints = Object.FindObjectsByType<PrototypeRouteCheckpoint>(FindObjectsSortMode.None)
+                .OrderBy(checkpoint => checkpoint.CheckpointIndex)
+                .ToArray();
+
+            Assert.That(vehicle, Is.Not.Null);
+            Assert.That(route, Is.Not.Null);
+            Assert.That(metrics, Is.Not.Null);
+            Assert.That(violenceTarget, Is.Not.Null);
+            Assert.That(checkpoints.Length, Is.EqualTo(5));
+
+            metrics.ResetRun();
+            route.Configure(checkpoints.Length);
+
+            yield return MoveVehicleToTransform(vehicle, checkpoints[0].transform);
+            yield return MoveVehicleToTransform(vehicle, checkpoints[1].transform);
+            violenceTarget.Interact();
+            yield return MoveVehicleToTransform(vehicle, checkpoints[2].transform);
+
+            Assert.That(Object.FindAnyObjectByType<PrototypeWorldState>().LastEvent, Is.EqualTo(PrototypeWorldEvent.PressureCrackdownTriggered));
+
+            yield return MoveVehicleToTransform(vehicle, checkpoints[3].transform);
+
+            Assert.That(route.IsComplete, Is.False);
+            Assert.That(route.Outcome, Is.EqualTo(PrototypeRouteOutcome.PressureBlocked));
+            Assert.That(metrics.RouteCompleted, Is.False);
+
+            yield return MoveVehicleToTransform(vehicle, checkpoints[4].transform);
+
+            Assert.That(route.IsComplete, Is.False);
+            Assert.That(route.Outcome, Is.EqualTo(PrototypeRouteOutcome.PressureFailureEscape));
+            Assert.That(metrics.RouteOutcome, Is.EqualTo(PrototypeRouteOutcome.PressureFailureEscape));
+            Assert.That(metrics.HasRouteCoverage, Is.False);
+            Assert.That(metrics.BuildSummary(), Does.Contain("RouteOutcome: PressureFailureEscape"));
+            Assert.That(PrototypeDebugState.Route, Does.Contain("Pressure escape"));
+        }
+
+        [UnityTest]
         public IEnumerator BribeMicrotestReducesPressureAndLeavesVisibleLeverage()
         {
             SceneManager.LoadScene("Phase1_FeelPrototype");
@@ -1017,6 +1108,27 @@ namespace ValleDePlata.Tests
             body.linearVelocity = Vector3.zero;
             body.angularVelocity = Vector3.zero;
             body.position = pressureZone.position;
+            vehicle.transform.position = body.position;
+            Physics.SyncTransforms();
+            yield return new WaitForFixedUpdate();
+            yield return null;
+        }
+
+        private static IEnumerator MoveVehicleToTransform(PrototypeVehicleController vehicle, Transform target)
+        {
+            var body = vehicle.GetComponent<Rigidbody>();
+            Assert.That(body, Is.Not.Null);
+
+            body.linearVelocity = Vector3.zero;
+            body.angularVelocity = Vector3.zero;
+            body.position = target.position + Vector3.left * 12f;
+            vehicle.transform.position = body.position;
+            Physics.SyncTransforms();
+            yield return new WaitForFixedUpdate();
+
+            body.linearVelocity = Vector3.zero;
+            body.angularVelocity = Vector3.zero;
+            body.position = target.position;
             vehicle.transform.position = body.position;
             Physics.SyncTransforms();
             yield return new WaitForFixedUpdate();
