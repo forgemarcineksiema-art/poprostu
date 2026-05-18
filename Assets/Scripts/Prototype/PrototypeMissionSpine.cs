@@ -15,6 +15,8 @@ namespace ValleDePlata.Prototype
         [SerializeField] private PrototypeWorldState worldState;
 
         public PrototypeMissionStage Stage { get; private set; } = PrototypeMissionStage.FindingFront;
+        public string ObjectivePrompt { get; private set; } = "Objective: collect dirty cash at El Respiro";
+        public bool IsPhase5Resolved => Stage is PrototypeMissionStage.FrontSecured or PrototypeMissionStage.PartialFailure;
 
         public void AttachWorldState(PrototypeWorldState state)
         {
@@ -92,13 +94,25 @@ namespace ValleDePlata.Prototype
 
         private void UpdateDebugState()
         {
-            PrototypeDebugState.Mission = Stage switch
+            ObjectivePrompt = Stage switch
+            {
+                PrototypeMissionStage.CarryingRisk => "Objective: secure El Respiro or risk losing the cash",
+                PrototypeMissionStage.FrontSecured => "Objective complete: exit through Safe return",
+                PrototypeMissionStage.PartialFailure => "Objective changed: leave through Safe return without the cash",
+                _ => "Objective: collect dirty cash at El Respiro"
+            };
+
+            var stateLine = Stage switch
             {
                 PrototypeMissionStage.CarryingRisk => "Mission: dirty cash is exposed, secure El Respiro",
                 PrototypeMissionStage.FrontSecured => "Mission: El Respiro secured under watch",
                 PrototypeMissionStage.PartialFailure => "Mission: partial failure, dirty cash seized",
                 _ => "Mission: find leverage at El Respiro"
             };
+
+            PrototypeDebugState.Mission = IsPhase5Resolved
+                ? $"{stateLine}\n{ObjectivePrompt}\nPhase 5 resolved"
+                : $"{stateLine}\n{ObjectivePrompt}";
         }
     }
 }

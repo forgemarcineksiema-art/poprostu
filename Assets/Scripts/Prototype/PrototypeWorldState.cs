@@ -186,11 +186,17 @@ namespace ValleDePlata.Prototype
             Changed?.Invoke(this);
         }
 
-        public void ApplyEvent(PrototypeWorldEvent worldEvent)
+        public bool ApplyEvent(PrototypeWorldEvent worldEvent)
         {
             if (worldEvent == PrototypeWorldEvent.None)
             {
-                return;
+                return false;
+            }
+
+            if (!CanApplyEvent(worldEvent))
+            {
+                PrototypeDebugState.WorldReaction = $"World event blocked: {worldEvent}";
+                return false;
             }
 
             switch (worldEvent)
@@ -233,6 +239,7 @@ namespace ValleDePlata.Prototype
             LastEvent = worldEvent;
             UpdateDebugState();
             Changed?.Invoke(this);
+            return true;
         }
 
         public string BuildDebugSummary()
@@ -267,6 +274,17 @@ namespace ValleDePlata.Prototype
         private void UpdateDebugState()
         {
             PrototypeDebugState.World = BuildDebugSummary();
+        }
+
+        private bool CanApplyEvent(PrototypeWorldEvent worldEvent)
+        {
+            return worldEvent switch
+            {
+                PrototypeWorldEvent.FrontTakenUnderWatch => DirtyCash == DirtyCashState.Carried,
+                PrototypeWorldEvent.DirtyCashSeized => DirtyCash == DirtyCashState.Carried,
+                PrototypeWorldEvent.DirtyCashPickedUp => DirtyCash is DirtyCashState.None or DirtyCashState.Loose,
+                _ => true
+            };
         }
 
         private static PressureLevel RaisePressure(PressureLevel current)

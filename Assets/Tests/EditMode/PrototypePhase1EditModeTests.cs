@@ -200,6 +200,62 @@ namespace ValleDePlata.Tests
         }
 
         [Test]
+        public void Phase5MissionSpinePublishesPlayableObjectivePrompts()
+        {
+            var worldObject = new GameObject("Mission Objective World State Test");
+            var missionObject = new GameObject("Mission Objective Spine Test");
+            var world = worldObject.AddComponent<PrototypeWorldState>();
+            var mission = missionObject.AddComponent<PrototypeMissionSpine>();
+
+            mission.AttachWorldState(world);
+
+            Assert.That(mission.ObjectivePrompt, Is.EqualTo("Objective: collect dirty cash at El Respiro"));
+            Assert.That(mission.IsPhase5Resolved, Is.False);
+            Assert.That(PrototypeDebugState.Mission, Does.Contain("collect dirty cash"));
+
+            world.ApplyEvent(PrototypeWorldEvent.DirtyCashPickedUp);
+
+            Assert.That(mission.Stage, Is.EqualTo(PrototypeMissionStage.CarryingRisk));
+            Assert.That(mission.ObjectivePrompt, Is.EqualTo("Objective: secure El Respiro or risk losing the cash"));
+            Assert.That(mission.IsPhase5Resolved, Is.False);
+
+            world.ApplyEvent(PrototypeWorldEvent.FrontTakenUnderWatch);
+
+            Assert.That(mission.Stage, Is.EqualTo(PrototypeMissionStage.FrontSecured));
+            Assert.That(mission.ObjectivePrompt, Is.EqualTo("Objective complete: exit through Safe return"));
+            Assert.That(mission.IsPhase5Resolved, Is.True);
+            Assert.That(PrototypeDebugState.Mission, Does.Contain("Phase 5 resolved"));
+
+            Object.DestroyImmediate(missionObject);
+            Object.DestroyImmediate(worldObject);
+        }
+
+        [Test]
+        public void Phase5MissionEventsRejectOutOfOrderTransitions()
+        {
+            var worldObject = new GameObject("Mission Transition World State Test");
+            var world = worldObject.AddComponent<PrototypeWorldState>();
+
+            world.ResetState();
+
+            Assert.That(world.ApplyEvent(PrototypeWorldEvent.FrontTakenUnderWatch), Is.False);
+            Assert.That(world.FrontControl, Is.EqualTo(FrontControl.Rival));
+            Assert.That(world.DirtyCash, Is.EqualTo(DirtyCashState.None));
+            Assert.That(world.LastEvent, Is.EqualTo(PrototypeWorldEvent.None));
+
+            Assert.That(world.ApplyEvent(PrototypeWorldEvent.DirtyCashSeized), Is.False);
+            Assert.That(world.DirtyCash, Is.EqualTo(DirtyCashState.None));
+            Assert.That(world.LastEvent, Is.EqualTo(PrototypeWorldEvent.None));
+
+            Assert.That(world.ApplyEvent(PrototypeWorldEvent.DirtyCashPickedUp), Is.True);
+            Assert.That(world.ApplyEvent(PrototypeWorldEvent.FrontTakenUnderWatch), Is.True);
+            Assert.That(world.FrontControl, Is.EqualTo(FrontControl.PabloWatched));
+            Assert.That(world.DirtyCash, Is.EqualTo(DirtyCashState.Hidden));
+
+            Object.DestroyImmediate(worldObject);
+        }
+
+        [Test]
         public void VehicleEnterExitKeepsPlayerRecoverable()
         {
             EditorSceneManager.OpenScene(ScenePath);

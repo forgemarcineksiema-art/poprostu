@@ -23,7 +23,7 @@ namespace ValleDePlata.Prototype
             }
 
             var text =
-                "Phase 2 Action Pressure Prototype\n" +
+                "Phase 5 Mission Spine Prototype\n" +
                 "WASD / Left Stick: move or drive\n" +
                 "Mouse / Right Stick: camera\n" +
                 "Shift: sprint | Space/LT: handbrake\n" +
