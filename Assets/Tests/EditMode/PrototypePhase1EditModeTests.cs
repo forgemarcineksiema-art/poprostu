@@ -1,5 +1,6 @@
 using System.IO;
 using System.Reflection;
+using System.Linq;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -152,6 +153,33 @@ namespace ValleDePlata.Tests
             RequireReadablePropGroup("Rios checkpoint readable prop", 4);
             RequireReadablePropGroup("Police roadblock readable prop", 6);
             RequireReadablePropGroup("El Respiro readable prop", 6);
+        }
+
+        [Test]
+        public void CursorControllerLocksAndRestoresMouseForPlayModeCamera()
+        {
+            var controllerType = System.Type.GetType("ValleDePlata.Prototype.PrototypeCursorController, ValleDePlata.Prototype");
+            Assert.That(controllerType, Is.Not.Null, "PrototypeCursorController type is missing.");
+
+            var resolveMethod = controllerType.GetMethod("ResolveCursorDecision", BindingFlags.Public | BindingFlags.Static);
+            Assert.That(resolveMethod, Is.Not.Null);
+
+            var initialLock = resolveMethod.Invoke(null, new object[] { true, true, false, true, false, CursorLockMode.None });
+            AssertCursorDecision(initialLock, CursorLockMode.Locked, false);
+
+            var escapeUnlock = resolveMethod.Invoke(null, new object[] { true, true, true, true, false, CursorLockMode.Locked });
+            AssertCursorDecision(escapeUnlock, CursorLockMode.None, true);
+
+            var clickRelock = resolveMethod.Invoke(null, new object[] { true, true, false, true, true, CursorLockMode.None });
+            AssertCursorDecision(clickRelock, CursorLockMode.Locked, false);
+        }
+
+        [Test]
+        public void Phase1SceneContainsCursorControllerForEditorPlaytests()
+        {
+            EditorSceneManager.OpenScene(ScenePath);
+
+            RequireComponentByName("Prototype Cursor Controller", "PrototypeCursorController");
         }
 
         [Test]
@@ -905,6 +933,24 @@ namespace ValleDePlata.Tests
             }
 
             return target;
+        }
+
+        private static void AssertCursorDecision(object decision, CursorLockMode expectedMode, bool expectedVisible)
+        {
+            Assert.That(decision, Is.Not.Null);
+            var decisionType = decision.GetType();
+            var lockState = (CursorLockMode)decisionType.GetProperty("LockState")?.GetValue(decision);
+            var visible = (bool)decisionType.GetProperty("Visible")?.GetValue(decision);
+            Assert.That(lockState, Is.EqualTo(expectedMode));
+            Assert.That(visible, Is.EqualTo(expectedVisible));
+        }
+
+        private static Component RequireComponentByName(string objectName, string componentName)
+        {
+            var target = RequireObject(objectName);
+            var component = target.GetComponents<Component>().FirstOrDefault(component => component != null && component.GetType().Name == componentName);
+            Assert.That(component, Is.Not.Null, $"{objectName} is missing component {componentName}.");
+            return component;
         }
 
         private static T RequireComponent<T>(string objectName) where T : Component

@@ -48,6 +48,7 @@ namespace ValleDePlata.Editor
             CreatePlayerHud(objectiveMarker);
             CreateCamera(player);
             CreateRunMetrics();
+            CreateCursorController();
             CreateDebugHud();
 
             EditorSceneManager.SaveScene(scene, ScenePath);
@@ -528,6 +529,12 @@ namespace ValleDePlata.Editor
             var debug = new GameObject("Prototype Debug HUD");
             var debugHud = debug.AddComponent<PrototypeDebugHud>();
             SetBool(debugHud, "visible", false);
+        }
+
+        private static void CreateCursorController()
+        {
+            var cursor = new GameObject("Prototype Cursor Controller");
+            cursor.AddComponent<PrototypeCursorController>();
         }
 
         private static void CreateWorldState()

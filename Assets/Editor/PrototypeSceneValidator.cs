@@ -25,6 +25,7 @@ namespace ValleDePlata.Editor
             RequireComponent<PrototypePlayerController>("Pablo Valera Prototype Controller");
             RequireComponent<PrototypeVehicleController>("Prototype Sedan");
             RequireComponent<PrototypeCameraRig>("Prototype Camera Rig");
+            RequireComponent<PrototypeCursorController>("Prototype Cursor Controller");
             RequireComponent<PrototypeDebugHud>("Prototype Debug HUD");
             RequireComponent<PrototypePlayerHud>("Prototype Player HUD");
             RequireComponent<PrototypeRunMetrics>("Phase 1 Run Metrics");
