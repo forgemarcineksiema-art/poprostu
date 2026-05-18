@@ -22,7 +22,11 @@ namespace ValleDePlata.Tests
                 "Motor Step Test High Wall",
                 "Motor Wall Test Player",
                 "Motor Wall Test Ground",
-                "Motor Wall Test Wall"
+                "Motor Wall Test Wall",
+                "Vehicle AB Test Ground",
+                "Vehicle AB Test Arcade",
+                "Vehicle AB Test Wheel",
+                "Vehicle AB Test Wall"
             };
 
             foreach (var transientName in transientNames)
@@ -298,6 +302,48 @@ namespace ValleDePlata.Tests
         }
 
         [UnityTest]
+        public IEnumerator VehicleABSpikeProducesComparableMetricsAndDecisionReport()
+        {
+            var ground = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            ground.name = "Vehicle AB Test Ground";
+            ground.layer = PrototypeLayers.WorldStatic;
+            ground.transform.position = new Vector3(0f, -0.05f, 18f);
+            ground.transform.localScale = new Vector3(28f, 0.1f, 60f);
+
+            var wall = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            wall.name = "Vehicle AB Test Wall";
+            wall.layer = PrototypeLayers.WorldStatic;
+            wall.transform.position = new Vector3(0f, 0.9f, 30f);
+            wall.transform.localScale = new Vector3(8f, 1.8f, 0.35f);
+
+            var arcade = CreateArcadeProbeVehicle(new Vector3(-4f, 0.55f, 0f));
+            var wheel = CreateWheelProbeVehicle(new Vector3(4f, 0.55f, 0f));
+            Physics.SyncTransforms();
+
+            var arcadeMetrics = PrototypeVehicleComparison.RunArcadeProbe(arcade, 1f / 50f);
+            var wheelMetrics = PrototypeVehicleComparison.RunWheelProbe(wheel, 1f / 50f);
+            var decision = PrototypeVehicleComparison.Decide(arcadeMetrics, wheelMetrics);
+            var report = PrototypeVehicleComparison.BuildReport(arcadeMetrics, wheelMetrics, decision);
+            TestContext.WriteLine(report);
+
+            Assert.That(arcadeMetrics.Candidate, Is.EqualTo(PrototypeVehicleCandidateKind.ArcadeRigidbodyBaseline));
+            Assert.That(wheelMetrics.Candidate, Is.EqualTo(PrototypeVehicleCandidateKind.WheelColliderSpike));
+            Assert.That(arcadeMetrics.CompletedProbe, Is.True);
+            Assert.That(arcadeMetrics.DistanceMeters, Is.GreaterThan(5f));
+            Assert.That(wheelMetrics.CompletedProbe, Is.True, "The spike must run to completion even if it loses the decision.");
+            Assert.That(report, Does.Contain("ArcadeRigidbodyBaseline"));
+            Assert.That(report, Does.Contain("WheelColliderSpike"));
+            Assert.That(report, Does.Contain("Decision:"));
+            Assert.That(decision, Is.EqualTo(PrototypeVehicleDecision.KeepArcadeRigidbodyBaseline));
+
+            Object.Destroy(arcade.gameObject);
+            Object.Destroy(wheel.gameObject);
+            Object.Destroy(ground);
+            Object.Destroy(wall);
+            yield return null;
+        }
+
+        [UnityTest]
         public IEnumerator CharacterMotorStopsAgainstWorldWall()
         {
             var playerObject = GameObject.CreatePrimitive(PrimitiveType.Capsule);
@@ -328,6 +374,63 @@ namespace ValleDePlata.Tests
             Object.Destroy(playerObject);
             Object.Destroy(ground);
             Object.Destroy(wall);
+        }
+
+        private static PrototypeVehicleController CreateArcadeProbeVehicle(Vector3 position)
+        {
+            var vehicleObject = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            vehicleObject.name = "Vehicle AB Test Arcade";
+            vehicleObject.layer = PrototypeLayers.Vehicle;
+            vehicleObject.transform.position = position;
+            vehicleObject.transform.localScale = new Vector3(1.9f, 1.1f, 4.1f);
+            var body = vehicleObject.AddComponent<Rigidbody>();
+            body.mass = 1150f;
+            body.linearDamping = 0.08f;
+            body.angularDamping = 0.75f;
+            return vehicleObject.AddComponent<PrototypeVehicleController>();
+        }
+
+        private static PrototypeWheelVehicleController CreateWheelProbeVehicle(Vector3 position)
+        {
+            var vehicleObject = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            vehicleObject.name = "Vehicle AB Test Wheel";
+            vehicleObject.layer = PrototypeLayers.Vehicle;
+            vehicleObject.transform.position = position;
+            vehicleObject.transform.localScale = new Vector3(1.9f, 0.8f, 4.1f);
+            var body = vehicleObject.AddComponent<Rigidbody>();
+            body.mass = 1150f;
+            body.linearDamping = 0.08f;
+            body.angularDamping = 0.75f;
+            body.centerOfMass = new Vector3(0f, -0.35f, 0f);
+
+            var controller = vehicleObject.AddComponent<PrototypeWheelVehicleController>();
+            var wheels = new[]
+            {
+                CreateWheel(vehicleObject.transform, "Front Left Wheel", new Vector3(-0.75f, -0.45f, 1.25f)),
+                CreateWheel(vehicleObject.transform, "Front Right Wheel", new Vector3(0.75f, -0.45f, 1.25f)),
+                CreateWheel(vehicleObject.transform, "Rear Left Wheel", new Vector3(-0.75f, -0.45f, -1.25f)),
+                CreateWheel(vehicleObject.transform, "Rear Right Wheel", new Vector3(0.75f, -0.45f, -1.25f))
+            };
+            controller.ConfigureForTests(new[] { wheels[2], wheels[3] }, new[] { wheels[0], wheels[1] });
+            return controller;
+        }
+
+        private static WheelCollider CreateWheel(Transform parent, string name, Vector3 localPosition)
+        {
+            var wheelObject = new GameObject(name);
+            wheelObject.transform.SetParent(parent);
+            wheelObject.transform.localPosition = localPosition;
+            var wheel = wheelObject.AddComponent<WheelCollider>();
+            wheel.radius = 0.32f;
+            wheel.suspensionDistance = 0.25f;
+            wheel.mass = 25f;
+            wheel.forceAppPointDistance = 0.15f;
+            var spring = wheel.suspensionSpring;
+            spring.spring = 26000f;
+            spring.damper = 4500f;
+            spring.targetPosition = 0.5f;
+            wheel.suspensionSpring = spring;
+            return wheel;
         }
 
         [UnityTest]

@@ -514,6 +514,38 @@ namespace ValleDePlata.Tests
         }
 
         [Test]
+        public void VehicleComparisonDecisionKeepsArcadeWhenWheelSpikeIsNotViable()
+        {
+            var arcade = new PrototypeVehicleProbeMetrics(
+                PrototypeVehicleCandidateKind.ArcadeRigidbodyBaseline,
+                28f,
+                12f,
+                4f,
+                3f,
+                42f,
+                55f,
+                2f,
+                true,
+                true);
+            var wheel = new PrototypeVehicleProbeMetrics(
+                PrototypeVehicleCandidateKind.WheelColliderSpike,
+                2f,
+                1f,
+                0f,
+                0f,
+                5f,
+                0f,
+                0f,
+                true,
+                false);
+
+            var decision = PrototypeVehicleComparison.Decide(arcade, wheel);
+
+            Assert.That(decision, Is.EqualTo(PrototypeVehicleDecision.KeepArcadeRigidbodyBaseline));
+            Assert.That(PrototypeVehicleComparison.BuildReport(arcade, wheel, decision), Does.Contain("Decision: KeepArcadeRigidbodyBaseline"));
+        }
+
+        [Test]
         public void Phase1SceneIsInBuildSettings()
         {
             var found = false;
