@@ -588,14 +588,19 @@ namespace ValleDePlata.Tests
             yield return null;
 
             var world = Object.FindAnyObjectByType<PrototypeWorldState>();
+            var mission = Object.FindAnyObjectByType<PrototypeMissionSpine>();
+            var marker = Object.FindAnyObjectByType<PrototypeObjectiveMarker>();
             var violenceTarget = GameObject.Find("Public violence test target")?.GetComponent<PrototypeInteractable>();
             var reactionMarkers = Object.FindObjectsByType<PrototypeWorldReactionMarker>(FindObjectsSortMode.None);
 
             Assert.That(world, Is.Not.Null);
+            Assert.That(mission, Is.Not.Null);
+            Assert.That(marker, Is.Not.Null);
             Assert.That(violenceTarget, Is.Not.Null);
             Assert.That(reactionMarkers.Length, Is.GreaterThanOrEqualTo(3));
 
             violenceTarget.Interact();
+            marker.Refresh();
             yield return null;
 
             Assert.That(world.LastEvent, Is.EqualTo(PrototypeWorldEvent.PublicViolenceCommitted));
@@ -603,9 +608,51 @@ namespace ValleDePlata.Tests
             Assert.That(world.PeopleLove, Is.EqualTo(SocialLevel.Low));
             Assert.That(world.StatePressure, Is.EqualTo(PressureLevel.Medium));
             Assert.That(world.RuleStyleDecision, Is.EqualTo(RuleStyle.ShowOfForce));
+            Assert.That(mission.Stage, Is.EqualTo(PrototypeMissionStage.ActionPressure));
+            Assert.That(marker.CurrentObjective, Is.EqualTo("Objective: contain street pressure before patrol locks the route"));
             Assert.That(PrototypeDebugState.World, Does.Contain("StatePressure: Medium"));
             Assert.That(PrototypeDebugState.WorldReaction, Does.Contain("after"));
             Assert.That(reactionMarkers.Count(marker => marker.Reacted), Is.GreaterThanOrEqualTo(3));
+        }
+
+        [UnityTest]
+        public IEnumerator Phase2RPressureBeatHasRuntimeSuccessAndFailureBranches()
+        {
+            SceneManager.LoadScene("Phase1_FeelPrototype");
+            yield return null;
+
+            var world = Object.FindAnyObjectByType<PrototypeWorldState>();
+            var mission = Object.FindAnyObjectByType<PrototypeMissionSpine>();
+            var marker = Object.FindAnyObjectByType<PrototypeObjectiveMarker>();
+            var violenceTarget = GameObject.Find("Public violence test target")?.GetComponent<PrototypeInteractable>();
+            var bribeOfficer = GameObject.Find("Rios bribe test officer")?.GetComponent<PrototypeInteractable>();
+
+            Assert.That(world, Is.Not.Null);
+            Assert.That(mission, Is.Not.Null);
+            Assert.That(marker, Is.Not.Null);
+            Assert.That(violenceTarget, Is.Not.Null);
+            Assert.That(bribeOfficer, Is.Not.Null);
+
+            violenceTarget.Interact();
+            bribeOfficer.Interact();
+            marker.Refresh();
+            yield return null;
+
+            Assert.That(world.LastEvent, Is.EqualTo(PrototypeWorldEvent.BribeAccepted));
+            Assert.That(world.StatePressure, Is.EqualTo(PressureLevel.Low));
+            Assert.That(mission.Stage, Is.EqualTo(PrototypeMissionStage.PressureContained));
+            Assert.That(marker.CurrentObjective, Is.EqualTo("Objective: pressure contained, continue to El Respiro"));
+
+            world.ResetState();
+            world.ApplyEvent(PrototypeWorldEvent.PublicViolenceCommitted);
+            world.ApplyEvent(PrototypeWorldEvent.PressureCrackdownTriggered);
+            marker.Refresh();
+            yield return null;
+
+            Assert.That(world.LastEvent, Is.EqualTo(PrototypeWorldEvent.PressureCrackdownTriggered));
+            Assert.That(world.StatePressure, Is.EqualTo(PressureLevel.High));
+            Assert.That(mission.Stage, Is.EqualTo(PrototypeMissionStage.PressureFailure));
+            Assert.That(marker.CurrentObjective, Is.EqualTo("Objective changed: escape the patrol pressure"));
         }
 
         [UnityTest]

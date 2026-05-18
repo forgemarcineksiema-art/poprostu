@@ -61,7 +61,8 @@ namespace ValleDePlata.Prototype
         MateoHumiliated,
         DirtyCashPickedUp,
         FrontTakenUnderWatch,
-        DirtyCashSeized
+        DirtyCashSeized,
+        PressureCrackdownTriggered
     }
 
     [Serializable]
@@ -234,6 +235,12 @@ namespace ValleDePlata.Prototype
                     DirtyCash = DirtyCashState.Seized;
                     StatePressure = PressureLevel.High;
                     break;
+                case PrototypeWorldEvent.PressureCrackdownTriggered:
+                    Fear = SocialLevel.High;
+                    PeopleLove = SocialLevel.Low;
+                    StatePressure = PressureLevel.High;
+                    RuleStyleDecision = RuleStyle.ShowOfForce;
+                    break;
             }
 
             LastEvent = worldEvent;
@@ -283,6 +290,7 @@ namespace ValleDePlata.Prototype
                 PrototypeWorldEvent.FrontTakenUnderWatch => DirtyCash == DirtyCashState.Carried,
                 PrototypeWorldEvent.DirtyCashSeized => DirtyCash == DirtyCashState.Carried,
                 PrototypeWorldEvent.DirtyCashPickedUp => DirtyCash is DirtyCashState.None or DirtyCashState.Loose,
+                PrototypeWorldEvent.PressureCrackdownTriggered => StatePressure != PressureLevel.Low,
                 _ => true
             };
         }

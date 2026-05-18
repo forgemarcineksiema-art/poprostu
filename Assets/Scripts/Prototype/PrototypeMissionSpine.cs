@@ -5,6 +5,9 @@ namespace ValleDePlata.Prototype
     public enum PrototypeMissionStage
     {
         FindingFront,
+        ActionPressure,
+        PressureContained,
+        PressureFailure,
         CarryingRisk,
         FrontSecured,
         PartialFailure
@@ -76,6 +79,18 @@ namespace ValleDePlata.Prototype
             {
                 Stage = PrototypeMissionStage.PartialFailure;
             }
+            else if (state.LastEvent == PrototypeWorldEvent.PressureCrackdownTriggered)
+            {
+                Stage = PrototypeMissionStage.PressureFailure;
+            }
+            else if (state.LastEvent == PrototypeWorldEvent.BribeAccepted)
+            {
+                Stage = PrototypeMissionStage.PressureContained;
+            }
+            else if (state.LastEvent == PrototypeWorldEvent.PublicViolenceCommitted)
+            {
+                Stage = PrototypeMissionStage.ActionPressure;
+            }
             else if (state.FrontControl == FrontControl.PabloWatched || state.FrontControl == FrontControl.Pablo)
             {
                 Stage = PrototypeMissionStage.FrontSecured;
@@ -96,6 +111,9 @@ namespace ValleDePlata.Prototype
         {
             ObjectivePrompt = Stage switch
             {
+                PrototypeMissionStage.ActionPressure => "Objective: contain street pressure before patrol locks the route",
+                PrototypeMissionStage.PressureContained => "Objective: pressure contained, continue to El Respiro",
+                PrototypeMissionStage.PressureFailure => "Objective changed: escape the patrol pressure",
                 PrototypeMissionStage.CarryingRisk => "Objective: secure El Respiro or risk losing the cash",
                 PrototypeMissionStage.FrontSecured => "Objective complete: exit through Safe return",
                 PrototypeMissionStage.PartialFailure => "Objective changed: leave through Safe return without the cash",
@@ -104,6 +122,9 @@ namespace ValleDePlata.Prototype
 
             var stateLine = Stage switch
             {
+                PrototypeMissionStage.ActionPressure => "Mission: street pressure rising after public violence",
+                PrototypeMissionStage.PressureContained => "Mission: pressure contained for now",
+                PrototypeMissionStage.PressureFailure => "Mission: patrol pressure has locked onto Pablo",
                 PrototypeMissionStage.CarryingRisk => "Mission: dirty cash is exposed, secure El Respiro",
                 PrototypeMissionStage.FrontSecured => "Mission: El Respiro secured under watch",
                 PrototypeMissionStage.PartialFailure => "Mission: partial failure, dirty cash seized",

@@ -238,6 +238,35 @@ namespace ValleDePlata.Tests
         }
 
         [Test]
+        public void Phase2RPressureBeatPublishesObjectiveBranchesFromWorldState()
+        {
+            var worldObject = new GameObject("Phase2R Pressure World State Test");
+            var missionObject = new GameObject("Phase2R Pressure Mission Spine Test");
+            var world = worldObject.AddComponent<PrototypeWorldState>();
+            var mission = missionObject.AddComponent<PrototypeMissionSpine>();
+
+            mission.AttachWorldState(world);
+            world.ApplyEvent(PrototypeWorldEvent.PublicViolenceCommitted);
+
+            Assert.That(mission.Stage, Is.EqualTo(PrototypeMissionStage.ActionPressure));
+            Assert.That(mission.ObjectivePrompt, Is.EqualTo("Objective: contain street pressure before patrol locks the route"));
+
+            world.ApplyEvent(PrototypeWorldEvent.BribeAccepted);
+            Assert.That(mission.Stage, Is.EqualTo(PrototypeMissionStage.PressureContained));
+            Assert.That(mission.ObjectivePrompt, Is.EqualTo("Objective: pressure contained, continue to El Respiro"));
+
+            world.ResetState();
+            world.ApplyEvent(PrototypeWorldEvent.PublicViolenceCommitted);
+            world.ApplyEvent(PrototypeWorldEvent.PressureCrackdownTriggered);
+
+            Assert.That(mission.Stage, Is.EqualTo(PrototypeMissionStage.PressureFailure));
+            Assert.That(mission.ObjectivePrompt, Is.EqualTo("Objective changed: escape the patrol pressure"));
+
+            Object.DestroyImmediate(missionObject);
+            Object.DestroyImmediate(worldObject);
+        }
+
+        [Test]
         public void Phase5MissionEventsRejectOutOfOrderTransitions()
         {
             var worldObject = new GameObject("Mission Transition World State Test");
