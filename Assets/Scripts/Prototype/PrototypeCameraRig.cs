@@ -4,8 +4,39 @@ namespace ValleDePlata.Prototype
 {
     public enum PrototypeCameraMode
     {
-        OnFoot,
-        Driving
+        OnFootFree,
+        OnFootInteractionFocus,
+        DrivingChase,
+        TightSpaceRecovery
+    }
+
+    public readonly struct PrototypeCameraProfile
+    {
+        public PrototypeCameraProfile(
+            float distance,
+            float height,
+            float followSharpness,
+            float recenterDelay,
+            float recenterSpeed,
+            float collisionRestoreSpeed,
+            float shoulderBias)
+        {
+            Distance = distance;
+            Height = height;
+            FollowSharpness = followSharpness;
+            RecenterDelay = recenterDelay;
+            RecenterSpeed = recenterSpeed;
+            CollisionRestoreSpeed = collisionRestoreSpeed;
+            ShoulderBias = shoulderBias;
+        }
+
+        public float Distance { get; }
+        public float Height { get; }
+        public float FollowSharpness { get; }
+        public float RecenterDelay { get; }
+        public float RecenterSpeed { get; }
+        public float CollisionRestoreSpeed { get; }
+        public float ShoulderBias { get; }
     }
 
     public sealed class PrototypeCameraRig : MonoBehaviour
@@ -38,7 +69,8 @@ namespace ValleDePlata.Prototype
         public Vector3 PlanarForward => (Quaternion.Euler(0f, yaw, 0f) * Vector3.forward).normalized;
         public Vector3 PlanarRight => (Quaternion.Euler(0f, yaw, 0f) * Vector3.right).normalized;
         public float Yaw => yaw;
-        public PrototypeCameraMode CurrentMode { get; private set; } = PrototypeCameraMode.OnFoot;
+        public PrototypeCameraMode CurrentMode { get; private set; } = PrototypeCameraMode.OnFootFree;
+        public PrototypeCameraProfile CurrentProfile { get; private set; } = ResolveProfile(PrototypeCameraMode.OnFootFree);
 
         private void Awake()
         {
@@ -60,7 +92,10 @@ namespace ValleDePlata.Prototype
                 return;
             }
 
-            CurrentMode = player.IsDriving ? PrototypeCameraMode.Driving : PrototypeCameraMode.OnFoot;
+            var targetMode = ResolveTargetMode();
+            var targetProfile = ResolveProfile(targetMode);
+            CurrentMode = targetMode;
+            CurrentProfile = targetProfile;
 
             var mouseDelta = PrototypeInput.LookMouseDelta;
             var gamepadLook = PrototypeInput.LookGamepad;
@@ -78,19 +113,27 @@ namespace ValleDePlata.Prototype
             else
             {
                 lookIdleTime += Time.deltaTime;
-                ApplyRecenter(Time.deltaTime);
+                ApplyRecenter(Time.deltaTime, targetProfile);
             }
 
             var pivot = player.CameraPivot;
             var pivotPosition = pivot.position + followOffset;
             var rotation = Quaternion.Euler(pitch, yaw, 0f);
-            var desiredDistance = CurrentMode == PrototypeCameraMode.Driving ? vehicleDistance : distance;
-            var desiredHeight = CurrentMode == PrototypeCameraMode.Driving ? vehicleHeight : height;
-            var desiredFollowSharpness = CurrentMode == PrototypeCameraMode.Driving ? vehicleFollowSharpness : followSharpness;
-            var desiredPosition = pivotPosition - rotation * Vector3.forward * desiredDistance + Vector3.up * desiredHeight;
+            var desiredPosition =
+                pivotPosition
+                - rotation * Vector3.forward * targetProfile.Distance
+                + Vector3.up * targetProfile.Height
+                + rotation * Vector3.right * targetProfile.ShoulderBias;
             var correctedPosition = ResolveCollision(pivotPosition, desiredPosition);
+            var collisionOffset = Vector3.Distance(correctedPosition, desiredPosition);
+            if (collisionOffset > 0.05f)
+            {
+                CurrentMode = PrototypeCameraMode.TightSpaceRecovery;
+                CurrentProfile = ResolveProfile(PrototypeCameraMode.TightSpaceRecovery);
+            }
 
-            transform.position = Vector3.Lerp(transform.position, correctedPosition, 1f - Mathf.Exp(-desiredFollowSharpness * Time.deltaTime));
+            var followSharpness = collisionOffset > 0.05f ? CurrentProfile.CollisionRestoreSpeed : targetProfile.FollowSharpness;
+            transform.position = Vector3.Lerp(transform.position, correctedPosition, 1f - Mathf.Exp(-followSharpness * Time.deltaTime));
             transform.rotation = Quaternion.LookRotation(pivotPosition - transform.position, Vector3.up);
             targetCamera.transform.SetPositionAndRotation(transform.position, transform.rotation);
         }
@@ -115,6 +158,17 @@ namespace ValleDePlata.Prototype
             return mouseDelta.x * mouseSensitivity + gamepadLook.x * gamepadYawDegreesPerSecond * deltaTime;
         }
 
+        public static PrototypeCameraProfile ResolveProfile(PrototypeCameraMode mode)
+        {
+            return mode switch
+            {
+                PrototypeCameraMode.OnFootInteractionFocus => new PrototypeCameraProfile(4.8f, 1.15f, 14f, 1.4f, 55f, 20f, 0.35f),
+                PrototypeCameraMode.DrivingChase => new PrototypeCameraProfile(7.5f, 1.25f, 9f, 0.6f, 105f, 18f, 0.18f),
+                PrototypeCameraMode.TightSpaceRecovery => new PrototypeCameraProfile(4.6f, 1.05f, 16f, 0.8f, 90f, 28f, 0.12f),
+                _ => new PrototypeCameraProfile(5.5f, 1.1f, 12f, 1.25f, 70f, 16f, 0f)
+            };
+        }
+
         private static float CalculatePitchDelta(
             Vector2 mouseDelta,
             Vector2 gamepadLook,
@@ -125,15 +179,26 @@ namespace ValleDePlata.Prototype
             return mouseDelta.y * mouseSensitivity + gamepadLook.y * gamepadPitchDegreesPerSecond * deltaTime;
         }
 
-        private void ApplyRecenter(float deltaTime)
+        private PrototypeCameraMode ResolveTargetMode()
+        {
+            if (player.IsDriving)
+            {
+                return PrototypeCameraMode.DrivingChase;
+            }
+
+            return player.HasInteractionFocus
+                ? PrototypeCameraMode.OnFootInteractionFocus
+                : PrototypeCameraMode.OnFootFree;
+        }
+
+        private void ApplyRecenter(float deltaTime, PrototypeCameraProfile profile)
         {
             if (player == null)
             {
                 return;
             }
 
-            var delay = CurrentMode == PrototypeCameraMode.Driving ? vehicleRecenterDelay : recenterDelay;
-            if (lookIdleTime < delay)
+            if (lookIdleTime < profile.RecenterDelay)
             {
                 return;
             }
@@ -145,8 +210,7 @@ namespace ValleDePlata.Prototype
             }
 
             var targetYaw = Mathf.Atan2(pivotForward.x, pivotForward.z) * Mathf.Rad2Deg;
-            var speed = CurrentMode == PrototypeCameraMode.Driving ? vehicleRecenterSpeed : recenterSpeed;
-            yaw = Mathf.MoveTowardsAngle(yaw, targetYaw, speed * deltaTime);
+            yaw = Mathf.MoveTowardsAngle(yaw, targetYaw, profile.RecenterSpeed * deltaTime);
         }
 
         private Vector3 ResolveCollision(Vector3 pivotPosition, Vector3 desiredPosition)
@@ -160,12 +224,13 @@ namespace ValleDePlata.Prototype
 
             var closestDistance = float.MaxValue;
             var hasHit = false;
+            var mask = collisionMask.value != 0 ? collisionMask.value : PrototypeLayers.CameraCollisionMask;
             var hits = Physics.SphereCastAll(
                 pivotPosition,
                 collisionRadius,
                 direction.normalized,
                 distanceToTarget,
-                collisionMask,
+                mask,
                 QueryTriggerInteraction.Ignore);
 
             foreach (var hit in hits)

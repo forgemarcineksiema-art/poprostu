@@ -11,6 +11,11 @@ namespace ValleDePlata.Editor
 
         public static void ValidatePhase1Scene()
         {
+            if (!PrototypeLayers.AreConfigured(out var missingLayers))
+            {
+                Fail($"Missing prototype layers: {missingLayers}");
+            }
+
             var scene = EditorSceneManager.OpenScene(ScenePath);
             if (!scene.IsValid() || !scene.isLoaded)
             {
@@ -24,6 +29,7 @@ namespace ValleDePlata.Editor
             RequireComponent<PrototypeRunMetrics>("Phase 1 Run Metrics");
             RequireComponent<PrototypeWorldState>("Prototype World State");
             RequireComponent<PrototypeMissionSpine>("Pierwszy Front Mission Spine");
+            RequireComponent<PrototypeObjectiveMarker>("Prototype Objective Marker");
             RequireComponent<PrototypePressureZone>("Pressure patrol marker");
             RequireComponent<PrototypeInteractable>("Workshop shutter interactable");
             RequireComponent<PrototypeInteractable>("Public violence test target");
@@ -63,6 +69,13 @@ namespace ValleDePlata.Editor
                 Fail("Scene has no MainCamera.");
             }
 
+            RequireLayer("Ground", PrototypeLayers.WorldStatic);
+            RequireLayer("Pablo Valera Prototype Controller", PrototypeLayers.Player);
+            RequireLayer("Prototype Sedan", PrototypeLayers.Vehicle);
+            RequireLayer("Workshop shutter interactable", PrototypeLayers.Interactable);
+            RequireLayer("Pressure patrol marker", PrototypeLayers.SensorTrigger);
+            RequireLayer("Route checkpoint 0: Start on foot", PrototypeLayers.RouteTrigger);
+
             Debug.Log("Phase 1 scene validation passed.");
         }
 
@@ -96,6 +109,20 @@ namespace ValleDePlata.Editor
             if (checkpoint.CheckpointIndex != index)
             {
                 Fail($"Route checkpoint {label} has index {checkpoint.CheckpointIndex}, expected {index}.");
+            }
+        }
+
+        private static void RequireLayer(string objectName, int expectedLayer)
+        {
+            var target = GameObject.Find(objectName);
+            if (target == null)
+            {
+                Fail($"Missing required object: {objectName}");
+            }
+
+            if (target.layer != expectedLayer)
+            {
+                Fail($"{objectName} is on layer {LayerMask.LayerToName(target.layer)}, expected {LayerMask.LayerToName(expectedLayer)}.");
             }
         }
 

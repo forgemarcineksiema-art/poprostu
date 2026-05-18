@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace ValleDePlata.Prototype
 {
-    [RequireComponent(typeof(CharacterController))]
+    [RequireComponent(typeof(PrototypeCharacterMotor))]
     public sealed class PrototypePlayerController : MonoBehaviour
     {
         [SerializeField] private Transform cameraPivot;
@@ -15,14 +15,15 @@ namespace ValleDePlata.Prototype
         [SerializeField] private float interactRadius = 2.25f;
         [SerializeField] private LayerMask interactMask = ~0;
 
-        private CharacterController characterController;
+        private PrototypeCharacterMotor characterMotor;
         private PrototypeCameraRig cameraRig;
         private PrototypeVehicleController currentVehicle;
-        private Vector3 horizontalVelocity;
-        private Vector3 verticalVelocity;
+        private bool hasInteractionTarget;
+        private PrototypeInteractionCandidate currentInteractionTarget;
 
         public bool IsDriving => currentVehicle != null;
         public Transform CameraPivot => currentVehicle != null ? currentVehicle.CameraPivot : cameraPivot;
+        public bool HasInteractionFocus => hasInteractionTarget && !currentInteractionTarget.Blocked;
 
         public void EnterVehicle(PrototypeVehicleController vehicle)
         {
@@ -33,9 +34,8 @@ namespace ValleDePlata.Prototype
 
             EnsureInitialized();
             currentVehicle = vehicle;
-            horizontalVelocity = Vector3.zero;
-            verticalVelocity = Vector3.zero;
-            characterController.enabled = false;
+            characterMotor.ResetVelocity();
+            characterMotor.enabled = false;
             gameObject.SetActive(false);
             vehicle.Enter(this);
             PrototypeRunMetrics.Active?.RecordVehicleEnter();
@@ -47,10 +47,9 @@ namespace ValleDePlata.Prototype
             EnsureInitialized();
             transform.SetPositionAndRotation(position, rotation);
             gameObject.SetActive(true);
-            characterController.enabled = true;
+            characterMotor.enabled = true;
             currentVehicle = null;
-            horizontalVelocity = Vector3.zero;
-            verticalVelocity = Vector3.zero;
+            characterMotor.ResetVelocity();
             PrototypeRunMetrics.Active?.RecordVehicleExit();
             PrototypeDebugState.Mode = "OnFoot";
         }
@@ -62,9 +61,9 @@ namespace ValleDePlata.Prototype
 
         private void EnsureInitialized()
         {
-            if (characterController == null)
+            if (characterMotor == null)
             {
-                characterController = GetComponent<CharacterController>();
+                characterMotor = GetComponent<PrototypeCharacterMotor>();
             }
 
             if (cameraPivot == null)
@@ -124,83 +123,55 @@ namespace ValleDePlata.Prototype
             var cameraForward = cameraRig != null ? cameraRig.PlanarForward : Vector3.ProjectOnPlane(cameraPivot.forward, Vector3.up).normalized;
             var cameraRight = cameraRig != null ? cameraRig.PlanarRight : Vector3.ProjectOnPlane(cameraPivot.right, Vector3.up).normalized;
             var desiredMove = BuildCameraRelativeMove(moveInput, cameraForward, cameraRight);
-
-            if (desiredMove.sqrMagnitude > 0.01f)
-            {
-                var targetRotation = Quaternion.LookRotation(desiredMove, Vector3.up);
-                transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, turnSharpness * deltaTime);
-            }
-
-            if (characterController.isGrounded && verticalVelocity.y < 0f)
-            {
-                verticalVelocity.y = -1f;
-            }
-
-            verticalVelocity.y += gravity * deltaTime;
-
             var speed = sprintHeld ? sprintSpeed : walkSpeed;
-            var targetHorizontal = desiredMove * speed;
-            var rate = desiredMove.sqrMagnitude > 0.01f ? acceleration : deceleration;
-            horizontalVelocity = Vector3.MoveTowards(horizontalVelocity, targetHorizontal, rate * deltaTime);
-            characterController.Move((horizontalVelocity + verticalVelocity) * deltaTime);
+            characterMotor.Move(desiredMove, speed, acceleration, deceleration, gravity, turnSharpness, deltaTime);
 
-            PrototypeDebugState.Speed = horizontalVelocity.magnitude;
+            PrototypeDebugState.Speed = characterMotor.HorizontalVelocity.magnitude;
             PrototypeDebugState.Focus = "On foot";
         }
 
         private void UpdateInteraction()
         {
-            var nearestVehicle = FindNearest<PrototypeVehicleController>(interactRadius);
-            var nearestInteractable = FindNearest<PrototypeInteractable>(interactRadius);
+            var queryMask = PrototypeLayers.InteractionQueryMask != 0 ? PrototypeLayers.InteractionQueryMask : interactMask.value;
+            hasInteractionTarget = PrototypeInteractionTargeting.TryFindBest(
+                transform.position,
+                transform.forward,
+                interactRadius,
+                queryMask,
+                PrototypeLayers.WorldCollisionMask,
+                out currentInteractionTarget);
 
-            if (nearestVehicle != null)
+            if (!hasInteractionTarget)
             {
-                PrototypeDebugState.Interaction = "E / South Button: enter car";
-                if (PrototypeInput.InteractPressedThisFrame)
+                PrototypeDebugState.Interaction = "None";
+                return;
+            }
+
+            PrototypeDebugState.Interaction = currentInteractionTarget.Blocked
+                ? "Interaction blocked"
+                : currentInteractionTarget.Prompt;
+
+            if (currentInteractionTarget.Blocked || !PrototypeInput.InteractPressedThisFrame)
+            {
+                return;
+            }
+
+            if (currentInteractionTarget.Kind == PrototypeInteractionKind.Vehicle)
+            {
+                var vehicle = currentInteractionTarget.Component as PrototypeVehicleController;
+                if (vehicle != null)
                 {
-                    EnterVehicle(nearestVehicle);
+                    EnterVehicle(vehicle);
                 }
 
                 return;
             }
 
-            if (nearestInteractable != null)
+            var interactable = currentInteractionTarget.Component as PrototypeInteractable;
+            if (interactable != null)
             {
-                PrototypeDebugState.Interaction = "E / South Button: " + nearestInteractable.Prompt;
-                if (PrototypeInput.InteractPressedThisFrame)
-                {
-                    nearestInteractable.Interact();
-                }
-
-                return;
+                interactable.Interact();
             }
-
-            PrototypeDebugState.Interaction = "None";
-        }
-
-        private T FindNearest<T>(float radius) where T : Component
-        {
-            var hits = Physics.OverlapSphere(transform.position, radius, interactMask, QueryTriggerInteraction.Collide);
-            T nearest = null;
-            var nearestDistance = float.MaxValue;
-
-            foreach (var hit in hits)
-            {
-                var candidate = hit.GetComponentInParent<T>();
-                if (candidate == null)
-                {
-                    continue;
-                }
-
-                var distance = Vector3.SqrMagnitude(candidate.transform.position - transform.position);
-                if (distance < nearestDistance)
-                {
-                    nearest = candidate;
-                    nearestDistance = distance;
-                }
-            }
-
-            return nearest;
         }
     }
 }

@@ -274,6 +274,80 @@ namespace ValleDePlata.Tests
         }
 
         [UnityTest]
+        public IEnumerator CharacterMotorStopsAgainstWorldWall()
+        {
+            var playerObject = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+            playerObject.name = "Motor Wall Test Player";
+            playerObject.layer = PrototypeLayers.Player;
+            playerObject.transform.position = new Vector3(0f, 1.05f, 0f);
+            var motor = playerObject.AddComponent<PrototypeCharacterMotor>();
+
+            var ground = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            ground.name = "Motor Wall Test Ground";
+            ground.layer = PrototypeLayers.WorldStatic;
+            ground.transform.position = new Vector3(0f, -0.05f, 1.5f);
+            ground.transform.localScale = new Vector3(5f, 0.1f, 5f);
+
+            var wall = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            wall.name = "Motor Wall Test Wall";
+            wall.layer = PrototypeLayers.WorldStatic;
+            wall.transform.position = new Vector3(0f, 1f, 1.2f);
+            wall.transform.localScale = new Vector3(3f, 2f, 0.2f);
+
+            Physics.SyncTransforms();
+            motor.Move(Vector3.forward, 6f, 30f, 30f, -22f, 14f, 0.5f);
+            yield return null;
+
+            Assert.That(playerObject.transform.position.z, Is.LessThan(0.85f));
+            Assert.That(motor.IsGrounded, Is.True);
+
+            Object.Destroy(playerObject);
+            Object.Destroy(ground);
+            Object.Destroy(wall);
+        }
+
+        [UnityTest]
+        public IEnumerator ObjectiveMarkerFollowsMissionSpineFromWorldState()
+        {
+            var worldObject = new GameObject("Objective Marker World Test");
+            var missionObject = new GameObject("Objective Marker Mission Test");
+            var markerObject = new GameObject("Objective Marker Test");
+            var world = worldObject.AddComponent<PrototypeWorldState>();
+            var mission = missionObject.AddComponent<PrototypeMissionSpine>();
+            var marker = markerObject.AddComponent<PrototypeObjectiveMarker>();
+
+            mission.AttachWorldState(world);
+            marker.AttachMissionSpine(mission);
+            marker.Refresh();
+
+            Assert.That(marker.CurrentObjective, Is.EqualTo("Objective: collect dirty cash at El Respiro"));
+
+            world.ApplyEvent(PrototypeWorldEvent.DirtyCashPickedUp);
+            marker.Refresh();
+
+            Assert.That(marker.CurrentObjective, Is.EqualTo("Objective: secure El Respiro or risk losing the cash"));
+
+            Object.Destroy(markerObject);
+            Object.Destroy(missionObject);
+            Object.Destroy(worldObject);
+            yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator SceneObjectsUseFoundationLayers()
+        {
+            SceneManager.LoadScene("Phase1_FeelPrototype");
+            yield return null;
+
+            Assert.That(GameObject.Find("Ground").layer, Is.EqualTo(PrototypeLayers.WorldStatic));
+            Assert.That(GameObject.Find("Pablo Valera Prototype Controller").layer, Is.EqualTo(PrototypeLayers.Player));
+            Assert.That(GameObject.Find("Prototype Sedan").layer, Is.EqualTo(PrototypeLayers.Vehicle));
+            Assert.That(GameObject.Find("Route checkpoint 0: Start on foot").layer, Is.EqualTo(PrototypeLayers.RouteTrigger));
+            Assert.That(GameObject.Find("Pressure patrol marker").layer, Is.EqualTo(PrototypeLayers.SensorTrigger));
+            Assert.That(GameObject.Find("Workshop shutter interactable").layer, Is.EqualTo(PrototypeLayers.Interactable));
+        }
+
+        [UnityTest]
         public IEnumerator PublicViolenceMicrotestChangesWorldAndVisibleMarkers()
         {
             SceneManager.LoadScene("Phase1_FeelPrototype");

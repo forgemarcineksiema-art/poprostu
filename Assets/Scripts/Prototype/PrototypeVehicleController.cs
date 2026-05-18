@@ -34,7 +34,7 @@ namespace ValleDePlata.Prototype
         [SerializeField] private float reverseSpeedThreshold = 0.35f;
         [SerializeField] private float exitCheckRadius = 0.42f;
         [SerializeField] private float exitCheckHeight = 1.75f;
-        [SerializeField] private LayerMask exitBlockMask = ~0;
+        [SerializeField] private LayerMask exitBlockMask;
 
         private Rigidbody body;
         private PrototypePlayerController driver;
@@ -212,7 +212,8 @@ namespace ValleDePlata.Prototype
 
             var capsuleBottom = candidatePosition + Vector3.up * 0.45f;
             var capsuleTop = candidatePosition + Vector3.up * Mathf.Max(exitCheckHeight - exitCheckRadius, exitCheckRadius);
-            var blockers = Physics.OverlapCapsule(capsuleBottom, capsuleTop, exitCheckRadius, exitBlockMask, QueryTriggerInteraction.Ignore);
+            var mask = exitBlockMask.value != 0 ? exitBlockMask.value : PrototypeLayers.ExitBlockMask;
+            var blockers = Physics.OverlapCapsule(capsuleBottom, capsuleTop, exitCheckRadius, mask, QueryTriggerInteraction.Ignore);
 
             foreach (var blocker in blockers)
             {

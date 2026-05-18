@@ -11,11 +11,15 @@ namespace ValleDePlata.Editor
     {
         private const string ScenePath = "Assets/Scenes/Phase1_FeelPrototype.unity";
         private const string MaterialFolder = "Assets/PrototypeMaterials";
+        private const string SettingsFolder = "Assets/Settings";
+        private const string SliceDefinitionPath = "Assets/Settings/Phase1SliceDefinition.asset";
 
         [MenuItem("Valle de Plata/Build Phase 1 Feel Prototype Scene")]
         public static void BuildPhase1Scene()
         {
             EnsureFolder(MaterialFolder);
+            EnsureFolder(SettingsFolder);
+            var sliceDefinition = EnsureSliceDefinition();
 
             var concrete = CreateMaterial("Prototype_Concrete", new Color(0.46f, 0.45f, 0.4f));
             var asphalt = CreateMaterial("Prototype_Asphalt", new Color(0.13f, 0.13f, 0.12f));
@@ -36,9 +40,10 @@ namespace ValleDePlata.Editor
             CreateEnvironment(concrete, asphalt, sunBleachedWall, rust, patrolBlue, routeGreen);
             var player = CreatePlayer();
             CreateVehicle();
-            CreateRoute(routeGreen);
+            CreateRoute(routeGreen, sliceDefinition);
             CreateWorldState();
-            CreateMissionSpine();
+            var mission = CreateMissionSpine();
+            CreateObjectiveMarker(mission);
             CreateCamera(player);
             CreateRunMetrics();
             CreateDebugHud();
@@ -66,7 +71,9 @@ namespace ValleDePlata.Editor
             CreateCube("Right barrio wall", new Vector3(4.9f, 1.25f, 6f), new Vector3(0.7f, 2.5f, 44f), wall);
             CreateCube("Tight corner block", new Vector3(2.1f, 1.6f, 28f), new Vector3(7f, 3.2f, 0.8f), wall);
             CreateCube("Return lane blocker", new Vector3(-2.2f, 0.6f, 40f), new Vector3(2.2f, 1.2f, 1.2f), rust);
-            CreateCube("Workshop shutter interactable", new Vector3(3.85f, 1.15f, 49f), new Vector3(0.35f, 2.3f, 4.3f), rust).AddComponent<PrototypeInteractable>();
+            var workshop = CreateCube("Workshop shutter interactable", new Vector3(3.85f, 1.15f, 49f), new Vector3(0.35f, 2.3f, 4.3f), rust);
+            workshop.AddComponent<PrototypeInteractable>();
+            PrototypeLayers.SetLayerRecursively(workshop, PrototypeLayers.Interactable);
             CreateCube("Static civilian car obstacle", new Vector3(-2.35f, 0.45f, 18f), new Vector3(2f, 0.9f, 4f), rust);
             CreatePublicViolenceMicrotest(rust, patrolBlue, routeGreen);
             CreateBribeMicrotest(rust, patrolBlue, routeGreen);
@@ -76,13 +83,16 @@ namespace ValleDePlata.Editor
             var patrol = CreateCube("Pressure patrol marker", new Vector3(0f, 0.55f, 34f), new Vector3(2.2f, 1.1f, 2.2f), patrolBlue);
             patrol.GetComponent<Collider>().isTrigger = true;
             patrol.AddComponent<PrototypePressureZone>();
+            PrototypeLayers.SetLayerRecursively(patrol, PrototypeLayers.SensorTrigger);
 
-            CreateCube("Safe return marker", new Vector3(0f, 0.04f, -8f), new Vector3(6f, 0.08f, 2.2f), routeGreen);
+            var safeReturn = CreateCube("Safe return marker", new Vector3(0f, 0.04f, -8f), new Vector3(6f, 0.08f, 2.2f), routeGreen);
+            PrototypeLayers.SetLayerRecursively(safeReturn, PrototypeLayers.CameraIgnore);
         }
 
         private static void CreatePublicViolenceMicrotest(Material rust, Material patrolBlue, Material routeGreen)
         {
             var target = CreateCube("Public violence test target", new Vector3(-3.1f, 0.8f, 10f), new Vector3(0.7f, 1.6f, 0.7f), rust);
+            PrototypeLayers.SetLayerRecursively(target, PrototypeLayers.Interactable);
             var interactable = target.AddComponent<PrototypeInteractable>();
             interactable.Configure(
                 "Use public violence",
@@ -121,6 +131,7 @@ namespace ValleDePlata.Editor
         private static void CreateBribeMicrotest(Material rust, Material patrolBlue, Material routeGreen)
         {
             var officer = CreateCube("Rios bribe test officer", new Vector3(3.15f, 0.85f, 22f), new Vector3(0.75f, 1.7f, 0.75f), patrolBlue);
+            PrototypeLayers.SetLayerRecursively(officer, PrototypeLayers.Interactable);
             officer.AddComponent<PrototypeInteractable>().Configure(
                 "Pay Rios bribe",
                 "Rios lets Pablo pass but remembers",
@@ -158,12 +169,14 @@ namespace ValleDePlata.Editor
         private static void CreateMateoMicrotest(Material rust, Material patrolBlue, Material routeGreen)
         {
             var trusted = CreateCube("Mateo protected test contact", new Vector3(-3.2f, 0.85f, 31f), new Vector3(0.75f, 1.7f, 0.75f), routeGreen);
+            PrototypeLayers.SetLayerRecursively(trusted, PrototypeLayers.Interactable);
             trusted.AddComponent<PrototypeInteractable>().Configure(
                 "Protect Mateo",
                 "Mateo warns early",
                 PrototypeWorldEvent.MateoProtected);
 
             var humiliated = CreateCube("Mateo humiliated test contact", new Vector3(3.2f, 0.85f, 31f), new Vector3(0.75f, 1.7f, 0.75f), rust);
+            PrototypeLayers.SetLayerRecursively(humiliated, PrototypeLayers.Interactable);
             humiliated.AddComponent<PrototypeInteractable>().Configure(
                 "Humiliate Mateo",
                 "Mateo warns too late",
@@ -192,12 +205,14 @@ namespace ValleDePlata.Editor
         private static void CreateFrontPrototypeMicrotest(Material rust, Material patrolBlue, Material routeGreen)
         {
             var cash = CreateCube("El Respiro dirty cash pickup", new Vector3(2.8f, 0.35f, 45f), new Vector3(0.9f, 0.7f, 0.9f), routeGreen);
+            PrototypeLayers.SetLayerRecursively(cash, PrototypeLayers.Interactable);
             cash.AddComponent<PrototypeInteractable>().Configure(
                 "Pick up dirty cash",
                 "Dirty cash is now Pablo's risk",
                 PrototypeWorldEvent.DirtyCashPickedUp);
 
             var front = CreateCube("El Respiro front takeover", new Vector3(3.55f, 1.3f, 47f), new Vector3(0.45f, 2.6f, 2.6f), rust);
+            PrototypeLayers.SetLayerRecursively(front, PrototypeLayers.Interactable);
             front.AddComponent<PrototypeInteractable>().Configure(
                 "Secure El Respiro front",
                 "El Respiro works, but under watch",
@@ -232,6 +247,7 @@ namespace ValleDePlata.Editor
                 new Color(0.42f, 0.66f, 0.82f));
 
             var seizure = CreateCube("Dirty cash seizure failstate", new Vector3(-2.7f, 0.45f, 43.5f), new Vector3(1.1f, 0.9f, 1.1f), patrolBlue);
+            PrototypeLayers.SetLayerRecursively(seizure, PrototypeLayers.Interactable);
             seizure.AddComponent<PrototypeInteractable>().Configure(
                 "Lose dirty cash",
                 "Dirty cash seized, operation continues wounded",
@@ -259,6 +275,7 @@ namespace ValleDePlata.Editor
             Color reactedColor)
         {
             var marker = CreateCube(name, position, scale, material);
+            PrototypeLayers.SetLayerRecursively(marker, PrototypeLayers.CameraIgnore);
             marker.AddComponent<PrototypeWorldReactionMarker>().Configure(
                 reactsTo,
                 message,
@@ -271,12 +288,9 @@ namespace ValleDePlata.Editor
             var playerObject = GameObject.CreatePrimitive(PrimitiveType.Capsule);
             playerObject.name = "Pablo Valera Prototype Controller";
             playerObject.transform.position = new Vector3(0f, 1f, -12f);
-            Object.DestroyImmediate(playerObject.GetComponent<CapsuleCollider>());
+            PrototypeLayers.SetLayerRecursively(playerObject, PrototypeLayers.Player);
 
-            var character = playerObject.AddComponent<CharacterController>();
-            character.height = 1.85f;
-            character.radius = 0.36f;
-            character.center = new Vector3(0f, 0.92f, 0f);
+            playerObject.AddComponent<PrototypeCharacterMotor>();
 
             var controller = playerObject.AddComponent<PrototypePlayerController>();
             var pivot = new GameObject("Camera Pivot").transform;
@@ -290,6 +304,7 @@ namespace ValleDePlata.Editor
         private static void CreateVehicle()
         {
             var vehicle = CreateCube("Prototype Sedan", new Vector3(-2.4f, 0.55f, -4f), new Vector3(1.9f, 1.1f, 4.1f), CreateMaterial("Prototype_CarGreen", new Color(0.17f, 0.3f, 0.22f)));
+            PrototypeLayers.SetLayerRecursively(vehicle, PrototypeLayers.Vehicle);
             var body = vehicle.AddComponent<Rigidbody>();
             body.mass = 1150f;
             body.linearDamping = 0.08f;
@@ -313,23 +328,24 @@ namespace ValleDePlata.Editor
             SetObjectReference(controller, "fallbackExitPoint", fallbackExitPoint);
         }
 
-        private static void CreateRoute(Material routeGreen)
+        private static void CreateRoute(Material routeGreen, PrototypeSliceDefinition sliceDefinition)
         {
             var routeObject = new GameObject("Phase 1 Route Progress");
             var route = routeObject.AddComponent<PrototypeRouteProgress>();
-            route.Configure(5);
+            var checkpoints = sliceDefinition.RouteCheckpoints;
+            route.Configure(checkpoints.Length);
 
-            CreateCheckpoint(route, 0, "Start on foot", new Vector3(0f, 0.25f, -10f), routeGreen);
-            CreateCheckpoint(route, 1, "Enter vehicle lane", new Vector3(-2.4f, 0.25f, -4f), routeGreen);
-            CreateCheckpoint(route, 2, "Patrol pressure turn", new Vector3(0f, 0.25f, 34f), routeGreen);
-            CreateCheckpoint(route, 3, "Workshop interaction stop", new Vector3(2.5f, 0.25f, 49f), routeGreen);
-            CreateCheckpoint(route, 4, "Safe return", new Vector3(0f, 0.25f, -8f), routeGreen);
+            for (var index = 0; index < checkpoints.Length; index++)
+            {
+                CreateCheckpoint(route, index, checkpoints[index].Label, checkpoints[index].Position, checkpoints[index].Scale, routeGreen);
+            }
         }
 
-        private static void CreateCheckpoint(PrototypeRouteProgress route, int index, string label, Vector3 position, Material material)
+        private static void CreateCheckpoint(PrototypeRouteProgress route, int index, string label, Vector3 position, Vector3 scale, Material material)
         {
-            var checkpoint = CreateCube($"Route checkpoint {index}: {label}", position, new Vector3(3.4f, 0.5f, 1.4f), material);
+            var checkpoint = CreateCube($"Route checkpoint {index}: {label}", position, scale, material);
             checkpoint.GetComponent<Collider>().isTrigger = true;
+            PrototypeLayers.SetLayerRecursively(checkpoint, PrototypeLayers.RouteTrigger);
             var routeCheckpoint = checkpoint.AddComponent<PrototypeRouteCheckpoint>();
             routeCheckpoint.Configure(route, index, label);
         }
@@ -347,6 +363,7 @@ namespace ValleDePlata.Editor
             var cameraRig = rig.AddComponent<PrototypeCameraRig>();
             SetObjectReference(cameraRig, "player", player);
             SetObjectReference(cameraRig, "targetCamera", cameraComponent);
+            SetLayerMask(cameraRig, "collisionMask", PrototypeLayers.CameraCollisionMask);
         }
 
         private static void CreateDebugHud()
@@ -361,10 +378,17 @@ namespace ValleDePlata.Editor
             worldState.AddComponent<PrototypeWorldState>();
         }
 
-        private static void CreateMissionSpine()
+        private static PrototypeMissionSpine CreateMissionSpine()
         {
             var mission = new GameObject("Pierwszy Front Mission Spine");
-            mission.AddComponent<PrototypeMissionSpine>();
+            return mission.AddComponent<PrototypeMissionSpine>();
+        }
+
+        private static void CreateObjectiveMarker(PrototypeMissionSpine mission)
+        {
+            var marker = new GameObject("Prototype Objective Marker");
+            var objectiveMarker = marker.AddComponent<PrototypeObjectiveMarker>();
+            SetObjectReference(objectiveMarker, "missionSpine", mission);
         }
 
         private static void CreateRunMetrics()
@@ -380,6 +404,7 @@ namespace ValleDePlata.Editor
             cube.transform.position = position;
             cube.transform.localScale = scale;
             cube.GetComponent<Renderer>().sharedMaterial = material;
+            PrototypeLayers.SetLayerRecursively(cube, PrototypeLayers.WorldStatic);
             return cube;
         }
 
@@ -402,6 +427,13 @@ namespace ValleDePlata.Editor
         {
             var serializedObject = new SerializedObject(target);
             serializedObject.FindProperty(propertyName).objectReferenceValue = value;
+            serializedObject.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        private static void SetLayerMask(Object target, string propertyName, int value)
+        {
+            var serializedObject = new SerializedObject(target);
+            serializedObject.FindProperty(propertyName).intValue = value;
             serializedObject.ApplyModifiedPropertiesWithoutUndo();
         }
 
@@ -432,6 +464,24 @@ namespace ValleDePlata.Editor
             var parent = Path.GetDirectoryName(path)?.Replace("\\", "/");
             var folder = Path.GetFileName(path);
             AssetDatabase.CreateFolder(string.IsNullOrEmpty(parent) ? "Assets" : parent, folder);
+        }
+
+        private static PrototypeSliceDefinition EnsureSliceDefinition()
+        {
+            var definition = AssetDatabase.LoadAssetAtPath<PrototypeSliceDefinition>(SliceDefinitionPath);
+            if (definition == null)
+            {
+                definition = ScriptableObject.CreateInstance<PrototypeSliceDefinition>();
+                definition.ConfigurePhase1Defaults();
+                AssetDatabase.CreateAsset(definition, SliceDefinitionPath);
+            }
+            else if (!definition.Validate(out _))
+            {
+                definition.ConfigurePhase1Defaults();
+                EditorUtility.SetDirty(definition);
+            }
+
+            return definition;
         }
     }
 }

@@ -17,12 +17,14 @@ namespace ValleDePlata.Tests
             EditorSceneManager.OpenScene(ScenePath);
 
             RequireComponent<PrototypePlayerController>("Pablo Valera Prototype Controller");
+            RequireComponent<PrototypeCharacterMotor>("Pablo Valera Prototype Controller");
             RequireComponent<PrototypeVehicleController>("Prototype Sedan");
             RequireComponent<PrototypeCameraRig>("Prototype Camera Rig");
             RequireComponent<PrototypeDebugHud>("Prototype Debug HUD");
             RequireComponent<PrototypeRunMetrics>("Phase 1 Run Metrics");
             RequireComponent<PrototypeWorldState>("Prototype World State");
             RequireComponent<PrototypeMissionSpine>("Pierwszy Front Mission Spine");
+            RequireComponent<PrototypeObjectiveMarker>("Prototype Objective Marker");
             RequireComponent<PrototypePressureZone>("Pressure patrol marker");
             RequireComponent<PrototypeInteractable>("Workshop shutter interactable");
             RequireComponent<PrototypeInteractable>("Public violence test target");
@@ -386,6 +388,105 @@ namespace ValleDePlata.Tests
             Assert.That(reverseIntent.Throttle, Is.EqualTo(0f));
             Assert.That(reverseIntent.Brake, Is.EqualTo(0f));
             Assert.That(reverseIntent.Reverse, Is.GreaterThan(0f));
+        }
+
+        [Test]
+        public void FoundationLayersAreConfiguredAndExposeRuntimeMasks()
+        {
+            Assert.That(PrototypeLayers.AreConfigured(out var missing), Is.True, missing);
+            Assert.That(PrototypeLayers.CameraCollisionMask, Is.EqualTo(PrototypeLayers.WorldCollisionMask));
+            Assert.That((PrototypeLayers.InteractionQueryMask & (1 << PrototypeLayers.Interactable)) != 0, Is.True);
+            Assert.That((PrototypeLayers.InteractionQueryMask & (1 << PrototypeLayers.Vehicle)) != 0, Is.True);
+            Assert.That((PrototypeLayers.ExitBlockMask & (1 << PrototypeLayers.RouteTrigger)) == 0, Is.True);
+            Assert.That((PrototypeLayers.ExitBlockMask & (1 << PrototypeLayers.SensorTrigger)) == 0, Is.True);
+        }
+
+        [Test]
+        public void CameraProfilesCoverFoundationLockModes()
+        {
+            var onFoot = PrototypeCameraRig.ResolveProfile(PrototypeCameraMode.OnFootFree);
+            var interaction = PrototypeCameraRig.ResolveProfile(PrototypeCameraMode.OnFootInteractionFocus);
+            var driving = PrototypeCameraRig.ResolveProfile(PrototypeCameraMode.DrivingChase);
+            var tightSpace = PrototypeCameraRig.ResolveProfile(PrototypeCameraMode.TightSpaceRecovery);
+
+            Assert.That(driving.Distance, Is.GreaterThan(onFoot.Distance));
+            Assert.That(interaction.ShoulderBias, Is.GreaterThan(onFoot.ShoulderBias));
+            Assert.That(tightSpace.CollisionRestoreSpeed, Is.GreaterThan(onFoot.CollisionRestoreSpeed));
+            Assert.That(driving.RecenterDelay, Is.LessThan(onFoot.RecenterDelay));
+        }
+
+        [Test]
+        public void CharacterMotorVelocityAndSlopeRulesAreDeterministic()
+        {
+            var current = Vector3.zero;
+            var target = PrototypeCharacterMotor.CalculateTargetHorizontalVelocity(
+                Vector3.forward,
+                current,
+                4.2f,
+                18f,
+                22f,
+                0.5f);
+
+            AssertVectorApproximately(target, Vector3.forward * 4.2f, 0.001f);
+            Assert.That(PrototypeCharacterMotor.IsSlopeWalkable(Vector3.up, 50f), Is.True);
+            Assert.That(PrototypeCharacterMotor.IsSlopeWalkable(Quaternion.Euler(65f, 0f, 0f) * Vector3.up, 50f), Is.False);
+        }
+
+        [Test]
+        public void InteractionTargetingPrefersVisibleHigherPriorityCandidate()
+        {
+            var origin = Vector3.zero;
+            var visibleVehicle = new PrototypeInteractionCandidate(
+                new GameObject("Visible Vehicle Candidate").transform,
+                PrototypeInteractionKind.Vehicle,
+                "enter",
+                10,
+                false);
+            var blockedInteractable = new PrototypeInteractionCandidate(
+                new GameObject("Blocked Interactable Candidate").transform,
+                PrototypeInteractionKind.Interactable,
+                "use",
+                20,
+                true);
+            visibleVehicle.Transform.position = new Vector3(2f, 0f, 0f);
+            blockedInteractable.Transform.position = new Vector3(1f, 0f, 0f);
+
+            var selected = PrototypeInteractionTargeting.SelectBest(
+                origin,
+                new[] { blockedInteractable, visibleVehicle },
+                out var target);
+
+            Assert.That(selected, Is.True);
+            Assert.That(target.Kind, Is.EqualTo(PrototypeInteractionKind.Vehicle));
+            Assert.That(target.Blocked, Is.False);
+
+            Object.DestroyImmediate(visibleVehicle.Transform.gameObject);
+            Object.DestroyImmediate(blockedInteractable.Transform.gameObject);
+        }
+
+        [Test]
+        public void SliceDefinitionProvidesPhase1RouteData()
+        {
+            var definition = ScriptableObject.CreateInstance<PrototypeSliceDefinition>();
+            definition.ConfigurePhase1Defaults();
+
+            Assert.That(definition.Validate(out var error), Is.True, error);
+            Assert.That(definition.RouteCheckpoints.Length, Is.EqualTo(5));
+            Assert.That(definition.RouteCheckpoints[0].Label, Is.EqualTo("Start on foot"));
+            Assert.That(definition.RouteCheckpoints[^1].Label, Is.EqualTo("Safe return"));
+
+            Object.DestroyImmediate(definition);
+        }
+
+        [Test]
+        public void WheelVehicleSpikeUsesSameDriveIntentAsArcadeBaseline()
+        {
+            var baseline = PrototypeVehicleController.ResolveDriveIntent(-1f, 3f, 0.35f);
+            var spike = PrototypeWheelVehicleController.ResolveDriveIntent(-1f, 3f, 0.35f);
+
+            Assert.That(spike.Throttle, Is.EqualTo(baseline.Throttle));
+            Assert.That(spike.Brake, Is.EqualTo(baseline.Brake));
+            Assert.That(spike.Reverse, Is.EqualTo(baseline.Reverse));
         }
 
         [Test]

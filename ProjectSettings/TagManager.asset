@@ -11,15 +11,15 @@ TagManager:
   - 
   - Water
   - UI
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
+  - WorldStatic
+  - WorldDynamic
+  - Player
+  - Vehicle
+  - Interactable
+  - RouteTrigger
+  - SensorTrigger
+  - CameraIgnore
+  - NPC
   - 
   - 
   - 
