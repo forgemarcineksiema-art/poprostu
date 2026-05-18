@@ -26,6 +26,7 @@ namespace ValleDePlata.Tests
             RequireComponent<PrototypeMissionSpine>("Pierwszy Front Mission Spine");
             RequireComponent<PrototypeObjectiveMarker>("Prototype Objective Marker");
             RequireComponent<PrototypePressureZone>("Pressure patrol marker");
+            RequireComponent<PrototypePressureScenePlayback>("Pressure patrol marker");
             RequireComponent<PrototypeInteractable>("Workshop shutter interactable");
             RequireComponent<PrototypeInteractable>("Public violence test target");
             RequireComponent<PrototypeWorldReactionMarker>("Civilian panic marker");

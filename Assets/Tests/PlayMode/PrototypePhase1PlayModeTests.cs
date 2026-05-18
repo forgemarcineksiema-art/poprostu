@@ -656,6 +656,50 @@ namespace ValleDePlata.Tests
         }
 
         [UnityTest]
+        public IEnumerator Phase2RPressureScenePlaybackMovesPatrolAndOpensRoadblock()
+        {
+            SceneManager.LoadScene("Phase1_FeelPrototype");
+            yield return null;
+
+            var world = Object.FindAnyObjectByType<PrototypeWorldState>();
+            var playback = Object.FindAnyObjectByType<PrototypePressureScenePlayback>();
+            var patrolMarker = GameObject.Find("Police pressure moves closer marker");
+            var roadblock = GameObject.Find("Bribe roadblock opens marker");
+            var roadblockCollider = roadblock?.GetComponent<Collider>();
+
+            Assert.That(world, Is.Not.Null);
+            Assert.That(playback, Is.Not.Null);
+            Assert.That(patrolMarker, Is.Not.Null);
+            Assert.That(roadblock, Is.Not.Null);
+            Assert.That(roadblockCollider, Is.Not.Null);
+
+            var patrolStart = patrolMarker.transform.position;
+            var roadblockStart = roadblock.transform.position;
+
+            world.ApplyEvent(PrototypeWorldEvent.PublicViolenceCommitted);
+            yield return null;
+
+            Assert.That(playback.State, Is.EqualTo(PrototypePressurePlaybackState.PressureRising));
+            Assert.That(Vector3.Distance(patrolStart, patrolMarker.transform.position), Is.GreaterThan(1.5f));
+            Assert.That(roadblockCollider.enabled, Is.True);
+
+            world.ApplyEvent(PrototypeWorldEvent.BribeAccepted);
+            yield return null;
+
+            Assert.That(playback.State, Is.EqualTo(PrototypePressurePlaybackState.Contained));
+            Assert.That(Vector3.Distance(roadblockStart, roadblock.transform.position), Is.GreaterThan(2.5f));
+            Assert.That(roadblockCollider.enabled, Is.False);
+
+            world.ApplyEvent(PrototypeWorldEvent.PublicViolenceCommitted);
+            world.ApplyEvent(PrototypeWorldEvent.PressureCrackdownTriggered);
+            yield return null;
+
+            Assert.That(playback.State, Is.EqualTo(PrototypePressurePlaybackState.Crackdown));
+            Assert.That(roadblockCollider.enabled, Is.True);
+            Assert.That(Vector3.Distance(roadblockStart, roadblock.transform.position), Is.LessThan(0.05f));
+        }
+
+        [UnityTest]
         public IEnumerator BribeMicrotestReducesPressureAndLeavesVisibleLeverage()
         {
             SceneManager.LoadScene("Phase1_FeelPrototype");

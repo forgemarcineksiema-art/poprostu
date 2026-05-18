@@ -76,14 +76,17 @@ namespace ValleDePlata.Editor
             workshop.AddComponent<PrototypeInteractable>();
             PrototypeLayers.SetLayerRecursively(workshop, PrototypeLayers.Interactable);
             CreateCube("Static civilian car obstacle", new Vector3(-2.35f, 0.45f, 18f), new Vector3(2f, 0.9f, 4f), rust);
-            CreatePublicViolenceMicrotest(rust, patrolBlue, routeGreen);
-            CreateBribeMicrotest(rust, patrolBlue, routeGreen);
+            var pressureMarker = CreatePublicViolenceMicrotest(rust, patrolBlue, routeGreen);
+            var roadblock = CreateBribeMicrotest(rust, patrolBlue, routeGreen);
             CreateMateoMicrotest(rust, patrolBlue, routeGreen);
             CreateFrontPrototypeMicrotest(rust, patrolBlue, routeGreen);
 
             var patrol = CreateCube("Pressure patrol marker", new Vector3(0f, 0.55f, 34f), new Vector3(2.2f, 1.1f, 2.2f), patrolBlue);
             patrol.GetComponent<Collider>().isTrigger = true;
             patrol.AddComponent<PrototypePressureZone>();
+            var playback = patrol.AddComponent<PrototypePressureScenePlayback>();
+            SetObjectReference(playback, "patrolMarker", pressureMarker.transform);
+            SetObjectReference(playback, "roadblockMarker", roadblock.transform);
             PrototypeLayers.SetLayerRecursively(patrol, PrototypeLayers.SensorTrigger);
 
             var safeReturn = CreateCube("Safe return marker", new Vector3(0f, 0.04f, -8f), new Vector3(6f, 0.08f, 2.2f), routeGreen);
@@ -101,7 +104,7 @@ namespace ValleDePlata.Editor
             CreateCube("Tight camera recovery wall", new Vector3(8f, 1.7f, -13.5f), new Vector3(0.45f, 3.4f, 4.4f), wall);
         }
 
-        private static void CreatePublicViolenceMicrotest(Material rust, Material patrolBlue, Material routeGreen)
+        private static GameObject CreatePublicViolenceMicrotest(Material rust, Material patrolBlue, Material routeGreen)
         {
             var target = CreateCube("Public violence test target", new Vector3(-3.1f, 0.8f, 10f), new Vector3(0.7f, 1.6f, 0.7f), rust);
             PrototypeLayers.SetLayerRecursively(target, PrototypeLayers.Interactable);
@@ -129,7 +132,7 @@ namespace ValleDePlata.Editor
                 "Shop closes after the public violence",
                 new Color(0.55f, 0.22f, 0.13f),
                 new Color(0.12f, 0.08f, 0.06f));
-            AddReactionMarker(
+            var pressureMarker = AddReactionMarker(
                 PrototypeWorldEvent.PublicViolenceCommitted,
                 "Police pressure moves closer marker",
                 new Vector3(1.6f, 0.55f, 18f),
@@ -138,9 +141,10 @@ namespace ValleDePlata.Editor
                 "Patrol shifts closer after witnesses talk",
                 new Color(0.08f, 0.16f, 0.28f),
                 new Color(0.08f, 0.32f, 0.62f));
+            return pressureMarker;
         }
 
-        private static void CreateBribeMicrotest(Material rust, Material patrolBlue, Material routeGreen)
+        private static GameObject CreateBribeMicrotest(Material rust, Material patrolBlue, Material routeGreen)
         {
             var officer = CreateCube("Rios bribe test officer", new Vector3(3.15f, 0.85f, 22f), new Vector3(0.75f, 1.7f, 0.75f), patrolBlue);
             PrototypeLayers.SetLayerRecursively(officer, PrototypeLayers.Interactable);
@@ -149,7 +153,7 @@ namespace ValleDePlata.Editor
                 "Rios lets Pablo pass but remembers",
                 PrototypeWorldEvent.BribeAccepted);
 
-            AddReactionMarker(
+            var roadblock = AddReactionMarker(
                 PrototypeWorldEvent.BribeAccepted,
                 "Bribe roadblock opens marker",
                 new Vector3(0f, 0.6f, 24.5f),
@@ -176,6 +180,7 @@ namespace ValleDePlata.Editor
                 "Risk cargo stays hidden after the bribe",
                 new Color(0.18f, 0.42f, 0.32f),
                 new Color(0.1f, 0.18f, 0.14f));
+            return roadblock;
         }
 
         private static void CreateMateoMicrotest(Material rust, Material patrolBlue, Material routeGreen)
@@ -276,7 +281,7 @@ namespace ValleDePlata.Editor
                 new Color(0.72f, 0.12f, 0.1f));
         }
 
-        private static void AddReactionMarker(
+        private static GameObject AddReactionMarker(
             PrototypeWorldEvent reactsTo,
             string name,
             Vector3 position,
@@ -293,6 +298,7 @@ namespace ValleDePlata.Editor
                 message,
                 idleColor,
                 reactedColor);
+            return marker;
         }
 
         private static PrototypePlayerController CreatePlayer()
