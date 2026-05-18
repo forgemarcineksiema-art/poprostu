@@ -44,6 +44,25 @@ function Read-BuildSummary {
     }
 }
 
+function Get-GitStatusPaths {
+    $lines = @(git status --porcelain)
+    $paths = @()
+    foreach ($line in $lines) {
+        if ([string]::IsNullOrWhiteSpace($line) -or $line.Length -lt 4) {
+            continue
+        }
+
+        $path = $line.Substring(3)
+        if ($path -like "* -> *") {
+            $path = ($path -split " -> ", 2)[1]
+        }
+
+        $paths += $path.Trim('"')
+    }
+
+    $paths | Sort-Object -Unique
+}
+
 Write-Host "Phase 1 status"
 Write-Host "Repo: $repoRoot"
 
@@ -86,13 +105,59 @@ try {
     Write-Host "Next command:"
     Write-Host "  powershell -NoProfile -ExecutionPolicy Bypass -File scripts\run_phase1_manual_gate.ps1"
 
+    $statusPaths = @(Get-GitStatusPaths)
+    $diffPaths = @()
+    $diffPaths += git diff --name-only
+    $diffPaths += git diff --cached --name-only
+    $diffPaths = @($diffPaths | Sort-Object -Unique)
+    $statusWithoutContentDiff = @($statusPaths | Where-Object { $diffPaths -notcontains $_ })
+
     Write-Host ""
-    Write-Host "Working tree content diff:"
-    $diffStat = git diff --stat
-    if ($diffStat) {
-        $diffStat
+    Write-Host "Unstaged content diff:"
+    $unstagedDiffStat = git diff --stat
+    if ($unstagedDiffStat) {
+        $unstagedDiffStat
     } else {
         Write-Host "  No content diff."
+    }
+
+    Write-Host ""
+    Write-Host "Staged content diff:"
+    $stagedDiffStat = git diff --cached --stat
+    if ($stagedDiffStat) {
+        $stagedDiffStat
+    } else {
+        Write-Host "  No staged content diff."
+    }
+
+    Write-Host ""
+    Write-Host "Working tree status paths:"
+    if ($statusPaths.Count -gt 0) {
+        foreach ($path in $statusPaths) {
+            Write-Host "  $path"
+        }
+    } else {
+        Write-Host "  Clean."
+    }
+
+    Write-Host ""
+    Write-Host "Content diff paths:"
+    if ($diffPaths.Count -gt 0) {
+        foreach ($path in $diffPaths) {
+            Write-Host "  $path"
+        }
+    } else {
+        Write-Host "  None."
+    }
+
+    Write-Host ""
+    Write-Host "Status paths without git diff content:"
+    if ($statusWithoutContentDiff.Count -gt 0) {
+        foreach ($path in $statusWithoutContentDiff) {
+            Write-Host "  $path"
+        }
+    } else {
+        Write-Host "  None."
     }
 } finally {
     Pop-Location

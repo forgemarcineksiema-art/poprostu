@@ -18,7 +18,11 @@ Add a read-only status checker for the Phase 1 gate.
 - latest developer build summary,
 - latest manual metrics coverage if present,
 - next manual gate command,
-- current working-tree content diff summary.
+- current unstaged content diff summary,
+- current staged content diff summary,
+- working-tree status paths,
+- combined staged/unstaged content diff paths,
+- status paths without `git diff` content.
 
 ## Command
 
@@ -43,6 +47,8 @@ Evidence:
 - Output includes `PlayMode: total=5 passed=5 failed=0`.
 - Output includes `Dev build: success`.
 - Output includes the manual gate command.
+- Output distinguishes content-diff paths from status-only paths.
+- Output checks both staged and unstaged content diffs.
 
 ## Limit
 
