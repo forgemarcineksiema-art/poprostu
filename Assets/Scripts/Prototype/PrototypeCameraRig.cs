@@ -19,7 +19,8 @@ namespace ValleDePlata.Prototype
             float recenterDelay,
             float recenterSpeed,
             float collisionRestoreSpeed,
-            float shoulderBias)
+            float shoulderBias,
+            float blendSharpness = 14f)
         {
             Distance = distance;
             Height = height;
@@ -28,6 +29,7 @@ namespace ValleDePlata.Prototype
             RecenterSpeed = recenterSpeed;
             CollisionRestoreSpeed = collisionRestoreSpeed;
             ShoulderBias = shoulderBias;
+            BlendSharpness = blendSharpness;
         }
 
         public float Distance { get; }
@@ -37,6 +39,21 @@ namespace ValleDePlata.Prototype
         public float RecenterSpeed { get; }
         public float CollisionRestoreSpeed { get; }
         public float ShoulderBias { get; }
+        public float BlendSharpness { get; }
+
+        public static PrototypeCameraProfile Lerp(PrototypeCameraProfile from, PrototypeCameraProfile to, float t)
+        {
+            var clamped = Mathf.Clamp01(t);
+            return new PrototypeCameraProfile(
+                Mathf.Lerp(from.Distance, to.Distance, clamped),
+                Mathf.Lerp(from.Height, to.Height, clamped),
+                Mathf.Lerp(from.FollowSharpness, to.FollowSharpness, clamped),
+                Mathf.Lerp(from.RecenterDelay, to.RecenterDelay, clamped),
+                Mathf.Lerp(from.RecenterSpeed, to.RecenterSpeed, clamped),
+                Mathf.Lerp(from.CollisionRestoreSpeed, to.CollisionRestoreSpeed, clamped),
+                Mathf.Lerp(from.ShoulderBias, to.ShoulderBias, clamped),
+                Mathf.Lerp(from.BlendSharpness, to.BlendSharpness, clamped));
+        }
     }
 
     public sealed class PrototypeCameraRig : MonoBehaviour
@@ -95,7 +112,7 @@ namespace ValleDePlata.Prototype
             var targetMode = ResolveTargetMode();
             var targetProfile = ResolveProfile(targetMode);
             CurrentMode = targetMode;
-            CurrentProfile = targetProfile;
+            CurrentProfile = BlendProfile(CurrentProfile, targetProfile, Time.deltaTime);
 
             var mouseDelta = PrototypeInput.LookMouseDelta;
             var gamepadLook = PrototypeInput.LookGamepad;
@@ -113,7 +130,7 @@ namespace ValleDePlata.Prototype
             else
             {
                 lookIdleTime += Time.deltaTime;
-                ApplyRecenter(Time.deltaTime, targetProfile);
+                ApplyRecenter(Time.deltaTime, CurrentProfile);
             }
 
             var pivot = player.CameraPivot;
@@ -121,18 +138,18 @@ namespace ValleDePlata.Prototype
             var rotation = Quaternion.Euler(pitch, yaw, 0f);
             var desiredPosition =
                 pivotPosition
-                - rotation * Vector3.forward * targetProfile.Distance
-                + Vector3.up * targetProfile.Height
-                + rotation * Vector3.right * targetProfile.ShoulderBias;
+                - rotation * Vector3.forward * CurrentProfile.Distance
+                + Vector3.up * CurrentProfile.Height
+                + rotation * Vector3.right * CurrentProfile.ShoulderBias;
             var correctedPosition = ResolveCollision(pivotPosition, desiredPosition);
             var collisionOffset = Vector3.Distance(correctedPosition, desiredPosition);
             if (collisionOffset > 0.05f)
             {
                 CurrentMode = PrototypeCameraMode.TightSpaceRecovery;
-                CurrentProfile = ResolveProfile(PrototypeCameraMode.TightSpaceRecovery);
+                CurrentProfile = BlendProfile(CurrentProfile, ResolveProfile(PrototypeCameraMode.TightSpaceRecovery), Time.deltaTime);
             }
 
-            var followSharpness = collisionOffset > 0.05f ? CurrentProfile.CollisionRestoreSpeed : targetProfile.FollowSharpness;
+            var followSharpness = collisionOffset > 0.05f ? CurrentProfile.CollisionRestoreSpeed : CurrentProfile.FollowSharpness;
             transform.position = Vector3.Lerp(transform.position, correctedPosition, 1f - Mathf.Exp(-followSharpness * Time.deltaTime));
             transform.rotation = Quaternion.LookRotation(pivotPosition - transform.position, Vector3.up);
             targetCamera.transform.SetPositionAndRotation(transform.position, transform.rotation);
@@ -162,11 +179,22 @@ namespace ValleDePlata.Prototype
         {
             return mode switch
             {
-                PrototypeCameraMode.OnFootInteractionFocus => new PrototypeCameraProfile(4.8f, 1.15f, 14f, 1.4f, 55f, 20f, 0.35f),
-                PrototypeCameraMode.DrivingChase => new PrototypeCameraProfile(7.5f, 1.25f, 9f, 0.6f, 105f, 18f, 0.18f),
-                PrototypeCameraMode.TightSpaceRecovery => new PrototypeCameraProfile(4.6f, 1.05f, 16f, 0.8f, 90f, 28f, 0.12f),
-                _ => new PrototypeCameraProfile(5.5f, 1.1f, 12f, 1.25f, 70f, 16f, 0f)
+                PrototypeCameraMode.OnFootInteractionFocus => new PrototypeCameraProfile(4.8f, 1.15f, 14f, 1.4f, 55f, 20f, 0.35f, 12f),
+                PrototypeCameraMode.DrivingChase => new PrototypeCameraProfile(7.5f, 1.25f, 9f, 0.6f, 105f, 18f, 0.18f, 10f),
+                PrototypeCameraMode.TightSpaceRecovery => new PrototypeCameraProfile(4.6f, 1.05f, 16f, 0.8f, 90f, 28f, 0.12f, 18f),
+                _ => new PrototypeCameraProfile(5.5f, 1.1f, 12f, 1.25f, 70f, 16f, 0f, 14f)
             };
+        }
+
+        private static PrototypeCameraProfile BlendProfile(PrototypeCameraProfile current, PrototypeCameraProfile target, float deltaTime)
+        {
+            if (deltaTime <= 0f)
+            {
+                return current;
+            }
+
+            var blend = 1f - Mathf.Exp(-target.BlendSharpness * deltaTime);
+            return PrototypeCameraProfile.Lerp(current, target, blend);
         }
 
         private static float CalculatePitchDelta(

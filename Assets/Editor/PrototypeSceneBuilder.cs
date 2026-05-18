@@ -71,6 +71,7 @@ namespace ValleDePlata.Editor
             CreateCube("Right barrio wall", new Vector3(4.9f, 1.25f, 6f), new Vector3(0.7f, 2.5f, 44f), wall);
             CreateCube("Tight corner block", new Vector3(2.1f, 1.6f, 28f), new Vector3(7f, 3.2f, 0.8f), wall);
             CreateCube("Return lane blocker", new Vector3(-2.2f, 0.6f, 40f), new Vector3(2.2f, 1.2f, 1.2f), rust);
+            CreateFoundationProofGeometry(wall, rust);
             var workshop = CreateCube("Workshop shutter interactable", new Vector3(3.85f, 1.15f, 49f), new Vector3(0.35f, 2.3f, 4.3f), rust);
             workshop.AddComponent<PrototypeInteractable>();
             PrototypeLayers.SetLayerRecursively(workshop, PrototypeLayers.Interactable);
@@ -89,6 +90,17 @@ namespace ValleDePlata.Editor
             PrototypeLayers.SetLayerRecursively(safeReturn, PrototypeLayers.CameraIgnore);
         }
 
+        private static void CreateFoundationProofGeometry(Material wall, Material rust)
+        {
+            CreateCube("Motor proof low step", new Vector3(-8f, 0.15f, -10.5f), new Vector3(1.6f, 0.3f, 0.55f), wall);
+            CreateCube("Motor proof high wall", new Vector3(-8f, 0.75f, -9.3f), new Vector3(1.8f, 1.5f, 0.25f), wall);
+
+            var slope = CreateCube("Motor proof steep slope", new Vector3(-6.6f, 0.35f, -9.7f), new Vector3(1.8f, 0.22f, 2.2f), rust);
+            slope.transform.rotation = Quaternion.Euler(0f, 0f, -58f);
+
+            CreateCube("Tight camera recovery wall", new Vector3(8f, 1.7f, -13.5f), new Vector3(0.45f, 3.4f, 4.4f), wall);
+        }
+
         private static void CreatePublicViolenceMicrotest(Material rust, Material patrolBlue, Material routeGreen)
         {
             var target = CreateCube("Public violence test target", new Vector3(-3.1f, 0.8f, 10f), new Vector3(0.7f, 1.6f, 0.7f), rust);
@@ -105,7 +117,7 @@ namespace ValleDePlata.Editor
                 new Vector3(-4.1f, 0.75f, 12f),
                 new Vector3(0.6f, 1.5f, 0.6f),
                 routeGreen,
-                "Civilians scatter from Pablo's show of force",
+                "Civilians scatter after Pablo's show of force",
                 new Color(0.18f, 0.42f, 0.32f),
                 new Color(0.95f, 0.7f, 0.18f));
             AddReactionMarker(

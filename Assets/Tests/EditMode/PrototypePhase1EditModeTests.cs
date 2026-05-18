@@ -49,6 +49,10 @@ namespace ValleDePlata.Tests
             RequireComponent<PrototypeRouteProgress>("Phase 1 Route Progress");
             RequireObject("Narrow asphalt route");
             RequireObject("Tight corner block");
+            RequireObject("Motor proof low step");
+            RequireObject("Motor proof high wall");
+            RequireObject("Motor proof steep slope");
+            RequireObject("Tight camera recovery wall");
             RequireObject("Safe return marker");
             RequireObject("Fallback Exit Point");
             RequireRouteCheckpoint(0, "Start on foot");
@@ -430,6 +434,26 @@ namespace ValleDePlata.Tests
             AssertVectorApproximately(target, Vector3.forward * 4.2f, 0.001f);
             Assert.That(PrototypeCharacterMotor.IsSlopeWalkable(Vector3.up, 50f), Is.True);
             Assert.That(PrototypeCharacterMotor.IsSlopeWalkable(Quaternion.Euler(65f, 0f, 0f) * Vector3.up, 50f), Is.False);
+        }
+
+        [Test]
+        public void CharacterMotorExposesRealFeelTuningDefaults()
+        {
+            var playerObject = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+            var motor = playerObject.AddComponent<PrototypeCharacterMotor>();
+            var serialized = new SerializedObject(motor);
+
+            var stepHeight = serialized.FindProperty("stepHeight");
+            var groundSnapDistance = serialized.FindProperty("groundSnapDistance");
+            var slopeLimit = serialized.FindProperty("slopeLimit");
+
+            Assert.That(stepHeight, Is.Not.Null, "Motor needs an explicit step height before it can be tuned against authored street geometry.");
+            Assert.That(stepHeight.floatValue, Is.EqualTo(0.38f).Within(0.001f));
+            Assert.That(groundSnapDistance, Is.Not.Null, "Motor needs ground snap as a first-class tuning parameter.");
+            Assert.That(groundSnapDistance.floatValue, Is.EqualTo(0.28f).Within(0.001f));
+            Assert.That(slopeLimit.floatValue, Is.EqualTo(50f).Within(0.001f));
+
+            Object.DestroyImmediate(playerObject);
         }
 
         [Test]

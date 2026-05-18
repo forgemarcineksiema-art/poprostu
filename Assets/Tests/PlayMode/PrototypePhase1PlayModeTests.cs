@@ -11,6 +11,30 @@ namespace ValleDePlata.Tests
 {
     public sealed class PrototypePhase1PlayModeTests
     {
+        [TearDown]
+        public void CleanupTransientFoundationObjects()
+        {
+            var transientNames = new[]
+            {
+                "Motor Step Test Player",
+                "Motor Step Test Ground",
+                "Motor Step Test Low Step",
+                "Motor Step Test High Wall",
+                "Motor Wall Test Player",
+                "Motor Wall Test Ground",
+                "Motor Wall Test Wall"
+            };
+
+            foreach (var transientName in transientNames)
+            {
+                var target = GameObject.Find(transientName);
+                if (target != null)
+                {
+                    Object.DestroyImmediate(target);
+                }
+            }
+        }
+
         [UnityTest]
         public IEnumerator PrototypeVehicleMovesUnderScriptedDriveInput()
         {
@@ -307,6 +331,77 @@ namespace ValleDePlata.Tests
         }
 
         [UnityTest]
+        public IEnumerator CharacterMotorClimbsLowStepThenStopsAtHighWall()
+        {
+            var playerObject = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+            playerObject.name = "Motor Step Test Player";
+            playerObject.layer = PrototypeLayers.Player;
+            playerObject.transform.position = new Vector3(0f, 0.08f, 0f);
+            var motor = playerObject.AddComponent<PrototypeCharacterMotor>();
+
+            var ground = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            ground.name = "Motor Step Test Ground";
+            ground.layer = PrototypeLayers.WorldStatic;
+            ground.transform.position = new Vector3(0f, -0.05f, 1.8f);
+            ground.transform.localScale = new Vector3(4f, 0.1f, 5.5f);
+
+            var lowStep = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            lowStep.name = "Motor Step Test Low Step";
+            lowStep.layer = PrototypeLayers.WorldStatic;
+            lowStep.transform.position = new Vector3(0f, 0.15f, 1.45f);
+            lowStep.transform.localScale = new Vector3(1.6f, 0.3f, 1.35f);
+
+            var highWall = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            highWall.name = "Motor Step Test High Wall";
+            highWall.layer = PrototypeLayers.WorldStatic;
+            highWall.transform.position = new Vector3(0f, 0.75f, 2.35f);
+            highWall.transform.localScale = new Vector3(1.8f, 1.5f, 0.25f);
+
+            Physics.SyncTransforms();
+            for (var i = 0; i < 120; i++)
+            {
+                motor.Move(Vector3.forward, 3f, 30f, 30f, -22f, 14f, 1f / 60f);
+                yield return null;
+            }
+
+            Assert.That(playerObject.transform.position.y, Is.GreaterThan(0.22f), "The motor should step onto low street curbs instead of treating them as full walls.");
+            Assert.That(playerObject.transform.position.z, Is.GreaterThan(1.35f));
+            Assert.That(playerObject.transform.position.z, Is.LessThan(2.12f), "The same motor must still reject a real wall after climbing the curb.");
+            Assert.That(motor.IsGrounded, Is.True);
+
+            Object.Destroy(playerObject);
+            Object.Destroy(ground);
+            Object.Destroy(lowStep);
+            Object.Destroy(highWall);
+        }
+
+        [UnityTest]
+        public IEnumerator CameraInteractionFocusBlendsProfileInsteadOfSnapping()
+        {
+            SceneManager.LoadScene("Phase1_FeelPrototype");
+            yield return null;
+
+            var player = Object.FindAnyObjectByType<PrototypePlayerController>();
+            var cameraRig = Object.FindAnyObjectByType<PrototypeCameraRig>();
+            var target = GameObject.Find("Public violence test target");
+            Assert.That(player, Is.Not.Null);
+            Assert.That(cameraRig, Is.Not.Null);
+            Assert.That(target, Is.Not.Null);
+
+            var freeDistance = PrototypeCameraRig.ResolveProfile(PrototypeCameraMode.OnFootFree).Distance;
+            var interactionDistance = PrototypeCameraRig.ResolveProfile(PrototypeCameraMode.OnFootInteractionFocus).Distance;
+            Assert.That(cameraRig.CurrentProfile.Distance, Is.EqualTo(freeDistance).Within(0.05f));
+
+            player.transform.position = target.transform.position + new Vector3(0.9f, -0.7f, 0f);
+            Physics.SyncTransforms();
+            yield return null;
+
+            Assert.That(cameraRig.CurrentMode, Is.EqualTo(PrototypeCameraMode.OnFootInteractionFocus));
+            Assert.That(cameraRig.CurrentProfile.Distance, Is.LessThan(freeDistance));
+            Assert.That(cameraRig.CurrentProfile.Distance, Is.GreaterThan(interactionDistance + 0.05f), "Interaction focus should blend in, not snap the camera distance in one frame.");
+        }
+
+        [UnityTest]
         public IEnumerator ObjectiveMarkerFollowsMissionSpineFromWorldState()
         {
             var worldObject = new GameObject("Objective Marker World Test");
@@ -345,6 +440,8 @@ namespace ValleDePlata.Tests
             Assert.That(GameObject.Find("Route checkpoint 0: Start on foot").layer, Is.EqualTo(PrototypeLayers.RouteTrigger));
             Assert.That(GameObject.Find("Pressure patrol marker").layer, Is.EqualTo(PrototypeLayers.SensorTrigger));
             Assert.That(GameObject.Find("Workshop shutter interactable").layer, Is.EqualTo(PrototypeLayers.Interactable));
+            Assert.That(GameObject.Find("Motor proof low step").layer, Is.EqualTo(PrototypeLayers.WorldStatic));
+            Assert.That(GameObject.Find("Tight camera recovery wall").layer, Is.EqualTo(PrototypeLayers.WorldStatic));
         }
 
         [UnityTest]

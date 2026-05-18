@@ -23,7 +23,19 @@ namespace ValleDePlata.Prototype
 
         public bool IsDriving => currentVehicle != null;
         public Transform CameraPivot => currentVehicle != null ? currentVehicle.CameraPivot : cameraPivot;
-        public bool HasInteractionFocus => hasInteractionTarget && !currentInteractionTarget.Blocked;
+        public bool HasInteractionFocus
+        {
+            get
+            {
+                if (currentVehicle != null || !isActiveAndEnabled)
+                {
+                    return false;
+                }
+
+                RefreshInteractionTarget();
+                return hasInteractionTarget && !currentInteractionTarget.Blocked;
+            }
+        }
 
         public void EnterVehicle(PrototypeVehicleController vehicle)
         {
@@ -132,26 +144,9 @@ namespace ValleDePlata.Prototype
 
         private void UpdateInteraction()
         {
-            var queryMask = PrototypeLayers.InteractionQueryMask != 0 ? PrototypeLayers.InteractionQueryMask : interactMask.value;
-            hasInteractionTarget = PrototypeInteractionTargeting.TryFindBest(
-                transform.position,
-                transform.forward,
-                interactRadius,
-                queryMask,
-                PrototypeLayers.WorldCollisionMask,
-                out currentInteractionTarget);
+            RefreshInteractionTarget();
 
-            if (!hasInteractionTarget)
-            {
-                PrototypeDebugState.Interaction = "None";
-                return;
-            }
-
-            PrototypeDebugState.Interaction = currentInteractionTarget.Blocked
-                ? "Interaction blocked"
-                : currentInteractionTarget.Prompt;
-
-            if (currentInteractionTarget.Blocked || !PrototypeInput.InteractPressedThisFrame)
+            if (!hasInteractionTarget || currentInteractionTarget.Blocked || !PrototypeInput.InteractPressedThisFrame)
             {
                 return;
             }
@@ -172,6 +167,28 @@ namespace ValleDePlata.Prototype
             {
                 interactable.Interact();
             }
+        }
+
+        private void RefreshInteractionTarget()
+        {
+            var queryMask = PrototypeLayers.InteractionQueryMask != 0 ? PrototypeLayers.InteractionQueryMask : interactMask.value;
+            hasInteractionTarget = PrototypeInteractionTargeting.TryFindBest(
+                transform.position,
+                transform.forward,
+                interactRadius,
+                queryMask,
+                PrototypeLayers.WorldCollisionMask,
+                out currentInteractionTarget);
+
+            if (!hasInteractionTarget)
+            {
+                PrototypeDebugState.Interaction = "None";
+                return;
+            }
+
+            PrototypeDebugState.Interaction = currentInteractionTarget.Blocked
+                ? "Interaction blocked"
+                : currentInteractionTarget.Prompt;
         }
     }
 }

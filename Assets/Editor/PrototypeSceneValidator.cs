@@ -55,6 +55,10 @@ namespace ValleDePlata.Editor
 
             RequireObject("Narrow asphalt route");
             RequireObject("Tight corner block");
+            RequireObject("Motor proof low step");
+            RequireObject("Motor proof high wall");
+            RequireObject("Motor proof steep slope");
+            RequireObject("Tight camera recovery wall");
             RequireObject("Static civilian car obstacle");
             RequireObject("Safe return marker");
             RequireRouteCheckpoint(0, "Start on foot");
@@ -75,6 +79,10 @@ namespace ValleDePlata.Editor
             RequireLayer("Workshop shutter interactable", PrototypeLayers.Interactable);
             RequireLayer("Pressure patrol marker", PrototypeLayers.SensorTrigger);
             RequireLayer("Route checkpoint 0: Start on foot", PrototypeLayers.RouteTrigger);
+            RequireLayer("Motor proof low step", PrototypeLayers.WorldStatic);
+            RequireLayer("Motor proof high wall", PrototypeLayers.WorldStatic);
+            RequireLayer("Motor proof steep slope", PrototypeLayers.WorldStatic);
+            RequireLayer("Tight camera recovery wall", PrototypeLayers.WorldStatic);
 
             Debug.Log("Phase 1 scene validation passed.");
         }
