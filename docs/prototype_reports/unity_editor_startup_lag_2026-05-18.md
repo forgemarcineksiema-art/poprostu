@@ -104,7 +104,7 @@
 - [Licensing::IpcConnector] Successfully connected to: "LicenseClient-Marcin-6000.4.7-notifications" at "2026-05-18T15:41:48.7628181Z"
 - [Licensing::Module] Connected to LicensingClient (PId: 29864, launch time: 0.01, total connection time: 1.03s)
 - [Licensing::Client] Successfully updated the access token
-- [Licensing::Module] Successfully updated the access token J7iweNgo73...
+- [Licensing::Module] Successfully updated the access token [redacted]
 - [Licensing::Client] Successfully resolved entitlement details
 - [Licensing::Module] License group:
 - [Licensing::Client] Successfully updated license, isAsync: True, time: 0.02
@@ -162,7 +162,7 @@
 - 	GatherAllCurrentPrimaryImportResultRevisions: 1.004ms
 - [Licensing::Client] Successfully resolved entitlement details
 - [Licensing::Client] Successfully updated the access token
-- [Licensing::Module] Successfully updated access token: "J7iweNgo"... (expires: 2026-05-18T17:31:50Z)
+- [Licensing::Module] Successfully updated access token: "[redacted]" (expires: [redacted])
 - [Licensing::Client] Successfully resolved entitlement details
 - [Licensing::Client] Successfully resolved entitlement details
 - Asset Pipeline Refresh (id=24686664e2dd70141bebd33e6d31e8ff): Total: 0.234 seconds - Initiated by RefreshV2(AllowForceSynchronousImport)

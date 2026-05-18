@@ -20,6 +20,7 @@ namespace ValleDePlata.Tests
 
             RequireComponent<PrototypePlayerController>("Pablo Valera Prototype Controller");
             RequireComponent<PrototypeCharacterMotor>("Pablo Valera Prototype Controller");
+            RequireComponent<PrototypeCharacterPresentation>("Pablo Valera Prototype Controller");
             RequireComponent<PrototypeVehicleController>("Prototype Sedan");
             RequireComponent<PrototypeCameraRig>("Prototype Camera Rig");
             RequireComponent<PrototypeDebugHud>("Prototype Debug HUD");
@@ -66,6 +67,67 @@ namespace ValleDePlata.Tests
             RequireRouteCheckpoint(4, "Safe return");
 
             Assert.That(Camera.main, Is.Not.Null);
+        }
+
+        [Test]
+        public void PlayerUsesCuratedAiCharacterVisualWithoutGameplayColliders()
+        {
+            EditorSceneManager.OpenScene(ScenePath);
+
+            var player = RequireObject("Pablo Valera Prototype Controller");
+            var rootRenderer = player.GetComponent<Renderer>();
+            Assert.That(rootRenderer == null || rootRenderer.enabled == false, Is.True, "The old capsule must become invisible once the generated character model is mounted.");
+
+            var presentation = player.GetComponent<PrototypeCharacterPresentation>();
+            Assert.That(presentation, Is.Not.Null, "The player needs a presentation layer separate from the kinematic motor.");
+
+            var visual = player.transform.Find("Pablo Character Visual");
+            Assert.That(visual, Is.Not.Null, "The generated character model must be mounted as a visual child, not replace the motor root.");
+            Assert.That(visual.gameObject.layer, Is.EqualTo(PrototypeLayers.Player));
+            Assert.That(presentation.VisualRoot, Is.EqualTo(visual));
+
+            var meshInstance = visual.Find("MaleCrimeDrama Visual Mesh");
+            Assert.That(meshInstance, Is.Not.Null, "The curated AI character prefab should be the visible player mesh.");
+            Assert.That(meshInstance.GetComponentsInChildren<Renderer>(true).Length, Is.GreaterThan(0));
+
+            foreach (var collider in visual.GetComponentsInChildren<Collider>(true))
+            {
+                Assert.That(collider.enabled == false || collider.isTrigger, Is.True, $"Visual collider {collider.name} must not affect player movement, vehicle exits, or camera collision.");
+            }
+        }
+
+        [Test]
+        public void CuratedAiCharacterAssetIsLightweightStaticVisual()
+        {
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Models/Characters/MaleCrimeDrama.prefab");
+            Assert.That(prefab, Is.Not.Null, "Missing curated Unity AI character prefab.");
+            Assert.That(prefab.GetComponentsInChildren<Renderer>(true).Length, Is.GreaterThan(0));
+            Assert.That(prefab.GetComponentsInChildren<SkinnedMeshRenderer>(true).Length, Is.EqualTo(0), "This generated drop is a static mesh and should not be treated as a rigged character yet.");
+            Assert.That(prefab.GetComponentsInChildren<Collider>(true).Length, Is.EqualTo(0), "Generated visual assets must not bring gameplay colliders.");
+
+            var glb = new FileInfo("Assets/Models/Characters/MaleCrimeDrama_Assets/selected.glb");
+            Assert.That(glb.Exists, Is.True);
+            Assert.That(glb.Length, Is.LessThan(2_000_000), "Prototype character visual should stay lightweight until the real rigged model pass.");
+        }
+
+        [Test]
+        public void CharacterPresentationStateTracksIdleWalkSprint()
+        {
+            Assert.That(PrototypeCharacterPresentation.ResolveLocomotionState(true, 0f, false, 6.4f), Is.EqualTo(PrototypeCharacterLocomotionState.Idle));
+            Assert.That(PrototypeCharacterPresentation.ResolveLocomotionState(true, 2.2f, false, 6.4f), Is.EqualTo(PrototypeCharacterLocomotionState.Walk));
+            Assert.That(PrototypeCharacterPresentation.ResolveLocomotionState(true, 5.9f, true, 6.4f), Is.EqualTo(PrototypeCharacterLocomotionState.Sprint));
+            Assert.That(PrototypeCharacterPresentation.ResolveLocomotionState(false, 5.9f, true, 6.4f), Is.EqualTo(PrototypeCharacterLocomotionState.Hidden));
+        }
+
+        [Test]
+        public void UnityAiGenerationToolingStaysAvailableForEditorAssetWork()
+        {
+            var manifest = File.ReadAllText("Packages/manifest.json");
+            var packagesLock = File.ReadAllText("Packages/packages-lock.json");
+
+            Assert.That(manifest, Does.Contain("com.unity.ai.assistant"), "Unity AI Assistant should stay installed because we are using it as an editor asset-generation tool.");
+            Assert.That(packagesLock, Does.Contain("com.unity.cloud.gltfast"), "The curated GLB model needs Unity's glTF importer dependency resolved in the package lock.");
+            Assert.That(manifest, Does.Not.Contain("com.unity.ai.inference"), "The editor Assistant should not force the runtime inference stack into playable builds.");
         }
 
         [Test]

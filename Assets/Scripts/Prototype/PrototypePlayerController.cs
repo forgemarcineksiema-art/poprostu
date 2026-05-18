@@ -16,6 +16,7 @@ namespace ValleDePlata.Prototype
         [SerializeField] private LayerMask interactMask = ~0;
 
         private PrototypeCharacterMotor characterMotor;
+        private PrototypeCharacterPresentation characterPresentation;
         private PrototypeCameraRig cameraRig;
         private PrototypeVehicleController currentVehicle;
         private bool hasInteractionTarget;
@@ -47,6 +48,7 @@ namespace ValleDePlata.Prototype
             EnsureInitialized();
             currentVehicle = vehicle;
             characterMotor.ResetVelocity();
+            characterPresentation?.SetVisible(false);
             characterMotor.enabled = false;
             gameObject.SetActive(false);
             vehicle.Enter(this);
@@ -62,6 +64,7 @@ namespace ValleDePlata.Prototype
             characterMotor.enabled = true;
             currentVehicle = null;
             characterMotor.ResetVelocity();
+            characterPresentation?.SetVisible(true);
             PrototypeRunMetrics.Active?.RecordVehicleExit();
             PrototypeDebugState.Mode = "OnFoot";
         }
@@ -76,6 +79,11 @@ namespace ValleDePlata.Prototype
             if (characterMotor == null)
             {
                 characterMotor = GetComponent<PrototypeCharacterMotor>();
+            }
+
+            if (characterPresentation == null)
+            {
+                characterPresentation = GetComponent<PrototypeCharacterPresentation>();
             }
 
             if (cameraPivot == null)
@@ -137,6 +145,7 @@ namespace ValleDePlata.Prototype
             var desiredMove = BuildCameraRelativeMove(moveInput, cameraForward, cameraRight);
             var speed = sprintHeld ? sprintSpeed : walkSpeed;
             characterMotor.Move(desiredMove, speed, acceleration, deceleration, gravity, turnSharpness, deltaTime);
+            characterPresentation?.ApplyLocomotion(characterMotor.HorizontalVelocity.magnitude, sprintHeld, sprintSpeed, deltaTime);
 
             PrototypeDebugState.Speed = characterMotor.HorizontalVelocity.magnitude;
             PrototypeDebugState.Focus = "On foot";

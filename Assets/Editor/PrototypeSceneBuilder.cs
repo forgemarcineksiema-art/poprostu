@@ -13,6 +13,7 @@ namespace ValleDePlata.Editor
         private const string MaterialFolder = "Assets/PrototypeMaterials";
         private const string SettingsFolder = "Assets/Settings";
         private const string SliceDefinitionPath = "Assets/Settings/Phase1SliceDefinition.asset";
+        private const string PlayerVisualPrefabPath = "Assets/Models/Characters/MaleCrimeDrama.prefab";
 
         [MenuItem("Valle de Plata/Build Phase 1 Feel Prototype Scene")]
         public static void BuildPhase1Scene()
@@ -448,16 +449,59 @@ namespace ValleDePlata.Editor
             playerObject.name = "Pablo Valera Prototype Controller";
             playerObject.transform.position = new Vector3(0f, 1f, -12f);
             PrototypeLayers.SetLayerRecursively(playerObject, PrototypeLayers.Player);
+            var capsuleRenderer = playerObject.GetComponent<Renderer>();
+            if (capsuleRenderer != null)
+            {
+                capsuleRenderer.enabled = false;
+            }
 
             playerObject.AddComponent<PrototypeCharacterMotor>();
+            var presentation = playerObject.AddComponent<PrototypeCharacterPresentation>();
 
             var controller = playerObject.AddComponent<PrototypePlayerController>();
             var pivot = new GameObject("Camera Pivot").transform;
             pivot.SetParent(playerObject.transform);
             pivot.localPosition = new Vector3(0f, 1.45f, 0f);
             SetObjectReference(controller, "cameraPivot", pivot);
+            AttachPlayerVisual(playerObject.transform, presentation);
 
             return controller;
+        }
+
+        private static void AttachPlayerVisual(Transform playerRoot, PrototypeCharacterPresentation presentation)
+        {
+            var visualRoot = new GameObject("Pablo Character Visual").transform;
+            visualRoot.SetParent(playerRoot);
+            visualRoot.localPosition = new Vector3(0f, 0.88f, 0f);
+            visualRoot.localRotation = Quaternion.identity;
+            visualRoot.localScale = Vector3.one;
+            PrototypeLayers.SetLayerRecursively(visualRoot.gameObject, PrototypeLayers.Player);
+
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PlayerVisualPrefabPath);
+            if (prefab != null)
+            {
+                var instance = PrefabUtility.InstantiatePrefab(prefab) as GameObject;
+                if (instance != null)
+                {
+                    instance.name = "MaleCrimeDrama Visual Mesh";
+                    instance.transform.SetParent(visualRoot);
+                    instance.transform.localPosition = Vector3.zero;
+                    instance.transform.localRotation = Quaternion.identity;
+                    instance.transform.localScale = Vector3.one * 1.75f;
+                    PrototypeLayers.SetLayerRecursively(instance, PrototypeLayers.Player);
+
+                    foreach (var collider in instance.GetComponentsInChildren<Collider>(true))
+                    {
+                        collider.enabled = false;
+                    }
+                }
+            }
+            else
+            {
+                Debug.LogWarning($"Player visual prefab missing at {PlayerVisualPrefabPath}. The controller will still work with its invisible motor root.");
+            }
+
+            presentation.AttachVisual(visualRoot);
         }
 
         private static void CreateVehicle()

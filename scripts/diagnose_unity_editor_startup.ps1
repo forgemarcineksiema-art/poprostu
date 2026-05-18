@@ -112,6 +112,15 @@ function Get-LogSignals {
     return @(Select-String -Path $LogPath -Pattern $patterns -CaseSensitive:$false | Select-Object -Last 120 | ForEach-Object { $_.Line })
 }
 
+function Protect-LogSignal {
+    param([string]$Line)
+
+    $clean = $Line
+    $clean = [regex]::Replace($clean, '(?i)(access token(?:\s*:)?\s+"?)[A-Za-z0-9._-]{6,}("?)', '$1[redacted]$2')
+    $clean = [regex]::Replace($clean, '(?i)(UNITY_[A-Z_]*TOKEN\s*=\s*)\S+', '$1[redacted]')
+    return $clean
+}
+
 if (-not $OutputPath -or $OutputPath.Trim().Length -eq 0) {
     $stamp = Get-Date -Format 'yyyyMMdd_HHmmss'
     $OutputPath = Join-Path $ProjectPath ("docs\prototype_reports\unity_editor_startup_diagnostics_{0}.md" -f $stamp)
@@ -232,7 +241,7 @@ if ($editorSignals.Count -eq 0) {
 }
 else {
     foreach ($signal in $editorSignals) {
-        $cleanSignal = $signal.TrimEnd().Replace('|', '\|')
+        $cleanSignal = (Protect-LogSignal -Line $signal).TrimEnd().Replace('|', '\|')
         $lines.Add(('- {0}' -f $cleanSignal))
     }
 }
@@ -240,7 +249,7 @@ $lines.Add('')
 
 $lines.Add('## Package Manager Log Tail')
 foreach ($signal in $upmSignals) {
-    $cleanSignal = $signal.TrimEnd().Replace('|', '\|')
+    $cleanSignal = (Protect-LogSignal -Line $signal).TrimEnd().Replace('|', '\|')
     $lines.Add(('- {0}' -f $cleanSignal))
 }
 $lines.Add('')
