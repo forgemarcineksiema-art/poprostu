@@ -23,6 +23,7 @@ namespace ValleDePlata.Editor
             RequireComponent<PrototypeDebugHud>("Prototype Debug HUD");
             RequireComponent<PrototypeRunMetrics>("Phase 1 Run Metrics");
             RequireComponent<PrototypeWorldState>("Prototype World State");
+            RequireComponent<PrototypeMissionSpine>("Pierwszy Front Mission Spine");
             RequireComponent<PrototypePressureZone>("Pressure patrol marker");
             RequireComponent<PrototypeInteractable>("Workshop shutter interactable");
             RequireComponent<PrototypeInteractable>("Public violence test target");
@@ -42,6 +43,8 @@ namespace ValleDePlata.Editor
             RequireComponent<PrototypeWorldReactionMarker>("Dirty cash carried marker");
             RequireComponent<PrototypeWorldReactionMarker>("El Respiro Pablo watched marker");
             RequireComponent<PrototypeWorldReactionMarker>("Barrio reaction to front marker");
+            RequireComponent<PrototypeInteractable>("Dirty cash seizure failstate");
+            RequireComponent<PrototypeWorldReactionMarker>("Seized cash partial failure marker");
             RequireComponent<PrototypeRouteProgress>("Phase 1 Route Progress");
 
             RequireObject("Narrow asphalt route");

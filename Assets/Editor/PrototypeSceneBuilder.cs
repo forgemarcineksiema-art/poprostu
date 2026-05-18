@@ -38,6 +38,7 @@ namespace ValleDePlata.Editor
             CreateVehicle();
             CreateRoute(routeGreen);
             CreateWorldState();
+            CreateMissionSpine();
             CreateCamera(player);
             CreateRunMetrics();
             CreateDebugHud();
@@ -229,6 +230,22 @@ namespace ValleDePlata.Editor
                 "Barrio notices El Respiro now belongs to Pablo",
                 new Color(0.18f, 0.42f, 0.32f),
                 new Color(0.42f, 0.66f, 0.82f));
+
+            var seizure = CreateCube("Dirty cash seizure failstate", new Vector3(-2.7f, 0.45f, 43.5f), new Vector3(1.1f, 0.9f, 1.1f), patrolBlue);
+            seizure.AddComponent<PrototypeInteractable>().Configure(
+                "Lose dirty cash",
+                "Dirty cash seized, operation continues wounded",
+                PrototypeWorldEvent.DirtyCashSeized);
+
+            AddReactionMarker(
+                PrototypeWorldEvent.DirtyCashSeized,
+                "Seized cash partial failure marker",
+                new Vector3(-4.2f, 0.7f, 43.5f),
+                new Vector3(0.8f, 1.4f, 0.8f),
+                patrolBlue,
+                "Dirty cash is seized without restarting the slice",
+                new Color(0.08f, 0.16f, 0.28f),
+                new Color(0.72f, 0.12f, 0.1f));
         }
 
         private static void AddReactionMarker(
@@ -337,6 +354,12 @@ namespace ValleDePlata.Editor
         {
             var worldState = new GameObject("Prototype World State");
             worldState.AddComponent<PrototypeWorldState>();
+        }
+
+        private static void CreateMissionSpine()
+        {
+            var mission = new GameObject("Pierwszy Front Mission Spine");
+            mission.AddComponent<PrototypeMissionSpine>();
         }
 
         private static void CreateRunMetrics()

@@ -60,7 +60,8 @@ namespace ValleDePlata.Prototype
         MateoProtected,
         MateoHumiliated,
         DirtyCashPickedUp,
-        FrontTakenUnderWatch
+        FrontTakenUnderWatch,
+        DirtyCashSeized
     }
 
     [Serializable]
@@ -222,6 +223,10 @@ namespace ValleDePlata.Prototype
                     StatePressure = LieutenantTrust == LieutenantTrust.Trusted
                         ? LowerPressure(StatePressure)
                         : RaisePressure(StatePressure);
+                    break;
+                case PrototypeWorldEvent.DirtyCashSeized:
+                    DirtyCash = DirtyCashState.Seized;
+                    StatePressure = PressureLevel.High;
                     break;
             }
 

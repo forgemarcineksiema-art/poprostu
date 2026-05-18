@@ -37,10 +37,11 @@ namespace ValleDePlata.Prototype
                 $"Checkpoint: {PrototypeDebugState.LastCheckpoint}\n" +
                 $"{PrototypeDebugState.World}\n" +
                 $"{PrototypeDebugState.WorldReaction}\n" +
+                $"{PrototypeDebugState.Mission}\n" +
                 $"Metrics: {PrototypeDebugState.Metrics}";
 
-            GUI.Box(new Rect(16, 16, 760, 430), GUIContent.none);
-            GUI.Label(new Rect(20, 20, 750, 425), text, style);
+            GUI.Box(new Rect(16, 16, 790, 465), GUIContent.none);
+            GUI.Label(new Rect(20, 20, 780, 460), text, style);
         }
     }
 }

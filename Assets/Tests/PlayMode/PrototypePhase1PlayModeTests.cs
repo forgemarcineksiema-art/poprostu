@@ -388,5 +388,62 @@ namespace ValleDePlata.Tests
             Assert.That(world.DirtyCash, Is.EqualTo(DirtyCashState.Hidden));
             Assert.That(world.StatePressure, Is.EqualTo(PressureLevel.Low));
         }
+
+        [UnityTest]
+        public IEnumerator Phase5MissionSpineTracksRuntimeSuccessPath()
+        {
+            SceneManager.LoadScene("Phase1_FeelPrototype");
+            yield return null;
+
+            var mission = Object.FindAnyObjectByType<PrototypeMissionSpine>();
+            var cashPickup = GameObject.Find("El Respiro dirty cash pickup")?.GetComponent<PrototypeInteractable>();
+            var frontTakeover = GameObject.Find("El Respiro front takeover")?.GetComponent<PrototypeInteractable>();
+
+            Assert.That(mission, Is.Not.Null);
+            Assert.That(cashPickup, Is.Not.Null);
+            Assert.That(frontTakeover, Is.Not.Null);
+            Assert.That(mission.Stage, Is.EqualTo(PrototypeMissionStage.FindingFront));
+
+            cashPickup.Interact();
+            yield return null;
+
+            Assert.That(mission.Stage, Is.EqualTo(PrototypeMissionStage.CarryingRisk));
+            Assert.That(PrototypeDebugState.Mission, Does.Contain("dirty cash is exposed"));
+
+            frontTakeover.Interact();
+            yield return null;
+
+            Assert.That(mission.Stage, Is.EqualTo(PrototypeMissionStage.FrontSecured));
+            Assert.That(PrototypeDebugState.Mission, Does.Contain("secured"));
+        }
+
+        [UnityTest]
+        public IEnumerator Phase5MissionSpineAllowsPartialFailureWithoutRestart()
+        {
+            SceneManager.LoadScene("Phase1_FeelPrototype");
+            yield return null;
+
+            var world = Object.FindAnyObjectByType<PrototypeWorldState>();
+            var mission = Object.FindAnyObjectByType<PrototypeMissionSpine>();
+            var cashPickup = GameObject.Find("El Respiro dirty cash pickup")?.GetComponent<PrototypeInteractable>();
+            var seizure = GameObject.Find("Dirty cash seizure failstate")?.GetComponent<PrototypeInteractable>();
+            var failureMarker = GameObject.Find("Seized cash partial failure marker")?.GetComponent<PrototypeWorldReactionMarker>();
+
+            Assert.That(world, Is.Not.Null);
+            Assert.That(mission, Is.Not.Null);
+            Assert.That(cashPickup, Is.Not.Null);
+            Assert.That(seizure, Is.Not.Null);
+            Assert.That(failureMarker, Is.Not.Null);
+
+            cashPickup.Interact();
+            seizure.Interact();
+            yield return null;
+
+            Assert.That(world.DirtyCash, Is.EqualTo(DirtyCashState.Seized));
+            Assert.That(world.StatePressure, Is.EqualTo(PressureLevel.High));
+            Assert.That(mission.Stage, Is.EqualTo(PrototypeMissionStage.PartialFailure));
+            Assert.That(failureMarker.Reacted, Is.True);
+            Assert.That(PrototypeDebugState.Mission, Does.Contain("partial failure"));
+        }
     }
 }

@@ -22,6 +22,7 @@ namespace ValleDePlata.Tests
             RequireComponent<PrototypeDebugHud>("Prototype Debug HUD");
             RequireComponent<PrototypeRunMetrics>("Phase 1 Run Metrics");
             RequireComponent<PrototypeWorldState>("Prototype World State");
+            RequireComponent<PrototypeMissionSpine>("Pierwszy Front Mission Spine");
             RequireComponent<PrototypePressureZone>("Pressure patrol marker");
             RequireComponent<PrototypeInteractable>("Workshop shutter interactable");
             RequireComponent<PrototypeInteractable>("Public violence test target");
@@ -41,6 +42,8 @@ namespace ValleDePlata.Tests
             RequireComponent<PrototypeWorldReactionMarker>("Dirty cash carried marker");
             RequireComponent<PrototypeWorldReactionMarker>("El Respiro Pablo watched marker");
             RequireComponent<PrototypeWorldReactionMarker>("Barrio reaction to front marker");
+            RequireComponent<PrototypeInteractable>("Dirty cash seizure failstate");
+            RequireComponent<PrototypeWorldReactionMarker>("Seized cash partial failure marker");
             RequireComponent<PrototypeRouteProgress>("Phase 1 Route Progress");
             RequireObject("Narrow asphalt route");
             RequireObject("Tight corner block");
@@ -162,6 +165,37 @@ namespace ValleDePlata.Tests
             Assert.That(world.FrontControl, Is.EqualTo(FrontControl.PabloWatched));
             Assert.That(world.StatePressure, Is.EqualTo(PressureLevel.Low));
 
+            Object.DestroyImmediate(worldObject);
+        }
+
+        [Test]
+        public void Phase5MissionSpineTracksSuccessAndPartialFailure()
+        {
+            var worldObject = new GameObject("Mission World State Test");
+            var missionObject = new GameObject("Mission Spine Test");
+            var world = worldObject.AddComponent<PrototypeWorldState>();
+            var mission = missionObject.AddComponent<PrototypeMissionSpine>();
+
+            mission.AttachWorldState(world);
+            Assert.That(mission.Stage, Is.EqualTo(PrototypeMissionStage.FindingFront));
+
+            world.ApplyEvent(PrototypeWorldEvent.DirtyCashPickedUp);
+            Assert.That(mission.Stage, Is.EqualTo(PrototypeMissionStage.CarryingRisk));
+
+            world.ApplyEvent(PrototypeWorldEvent.FrontTakenUnderWatch);
+            Assert.That(mission.Stage, Is.EqualTo(PrototypeMissionStage.FrontSecured));
+            Assert.That(PrototypeDebugState.Mission, Does.Contain("secured"));
+
+            world.ResetState();
+            world.ApplyEvent(PrototypeWorldEvent.DirtyCashPickedUp);
+            world.ApplyEvent(PrototypeWorldEvent.DirtyCashSeized);
+
+            Assert.That(world.DirtyCash, Is.EqualTo(DirtyCashState.Seized));
+            Assert.That(world.StatePressure, Is.EqualTo(PressureLevel.High));
+            Assert.That(mission.Stage, Is.EqualTo(PrototypeMissionStage.PartialFailure));
+            Assert.That(PrototypeDebugState.Mission, Does.Contain("partial failure"));
+
+            Object.DestroyImmediate(missionObject);
             Object.DestroyImmediate(worldObject);
         }
 
