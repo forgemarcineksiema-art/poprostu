@@ -1,4 +1,5 @@
 using System.Collections;
+using System.IO;
 using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
@@ -276,6 +277,52 @@ namespace ValleDePlata.Tests
             Assert.That(world.LastEvent, Is.EqualTo(PrototypeWorldEvent.MateoHumiliated));
             Assert.That(world.LieutenantTrust, Is.EqualTo(LieutenantTrust.Humiliated));
             Assert.That(lateWarning.Reacted, Is.True);
+        }
+
+        [UnityTest]
+        public IEnumerator Phase3LoadRestoresWorldStateAndVisibleReactions()
+        {
+            SceneManager.LoadScene("Phase1_FeelPrototype");
+            yield return null;
+
+            var world = Object.FindAnyObjectByType<PrototypeWorldState>();
+            var bribeOfficer = GameObject.Find("Rios bribe test officer")?.GetComponent<PrototypeInteractable>();
+            var bribeMarkers = Object.FindObjectsByType<PrototypeWorldReactionMarker>(FindObjectsSortMode.None)
+                .Where(marker => marker.ReactionMessage.Contains("bribe") || marker.ReactionMessage.Contains("Rios") || marker.ReactionMessage.Contains("Risk cargo"))
+                .ToArray();
+            var snapshotPath = Path.Combine(Application.temporaryCachePath, "phase3_world_state_runtime_snapshot.json");
+
+            Assert.That(world, Is.Not.Null);
+            Assert.That(bribeOfficer, Is.Not.Null);
+            Assert.That(bribeMarkers.Length, Is.EqualTo(3));
+
+            world.ApplyEvent(PrototypeWorldEvent.PublicViolenceCommitted);
+            bribeOfficer.Interact();
+            yield return null;
+
+            world.SaveSnapshot(snapshotPath);
+            Assert.That(File.Exists(snapshotPath), Is.True);
+
+            world.ResetState();
+            yield return null;
+
+            Assert.That(world.LastEvent, Is.EqualTo(PrototypeWorldEvent.None));
+            Assert.That(bribeMarkers.Count(marker => marker.Reacted), Is.EqualTo(0));
+
+            world.LoadSnapshot(snapshotPath);
+            yield return null;
+
+            Assert.That(world.LastEvent, Is.EqualTo(PrototypeWorldEvent.BribeAccepted));
+            Assert.That(world.DirtyCash, Is.EqualTo(DirtyCashState.Hidden));
+            Assert.That(world.StatePressure, Is.EqualTo(PressureLevel.Low));
+            Assert.That(world.RuleStyleDecision, Is.EqualTo(RuleStyle.Bribe));
+            Assert.That(PrototypeDebugState.World, Does.Contain("LastEvent: BribeAccepted"));
+            Assert.That(bribeMarkers.Count(marker => marker.Reacted), Is.EqualTo(3));
+
+            if (File.Exists(snapshotPath))
+            {
+                File.Delete(snapshotPath);
+            }
         }
     }
 }

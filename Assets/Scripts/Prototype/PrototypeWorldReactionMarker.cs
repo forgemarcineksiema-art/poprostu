@@ -69,7 +69,18 @@ namespace ValleDePlata.Prototype
 
         private void ApplyFromState(PrototypeWorldState state)
         {
-            if (state == null || state.LastEvent != reactsTo)
+            if (state == null)
+            {
+                return;
+            }
+
+            if (state.LastEvent == PrototypeWorldEvent.None)
+            {
+                ResetReaction();
+                return;
+            }
+
+            if (state.LastEvent != reactsTo)
             {
                 return;
             }
@@ -77,6 +88,13 @@ namespace ValleDePlata.Prototype
             Reacted = true;
             ApplyColor(reactedColor);
             PrototypeDebugState.WorldReaction = reactionMessage;
+        }
+
+        private void ResetReaction()
+        {
+            Reacted = false;
+            ApplyColor(idleColor);
+            PrototypeDebugState.WorldReaction = "World reaction: none";
         }
 
         private void CacheRenderers()

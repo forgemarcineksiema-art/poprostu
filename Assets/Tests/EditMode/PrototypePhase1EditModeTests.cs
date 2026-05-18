@@ -1,3 +1,4 @@
+using System.IO;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -84,6 +85,47 @@ namespace ValleDePlata.Tests
             Assert.That(world.LastEvent, Is.EqualTo(PrototypeWorldEvent.MateoHumiliated));
 
             Object.DestroyImmediate(worldObject);
+        }
+
+        [Test]
+        public void Phase3WorldStateSnapshotRoundTripsThroughFile()
+        {
+            var worldObject = new GameObject("World State Snapshot Test");
+            var world = worldObject.AddComponent<PrototypeWorldState>();
+            var snapshotPath = Path.Combine(Path.GetTempPath(), "valle_de_plata_phase3_world_state_test.json");
+
+            try
+            {
+                world.ResetState();
+                world.ApplyEvent(PrototypeWorldEvent.PublicViolenceCommitted);
+                world.ApplyEvent(PrototypeWorldEvent.BribeAccepted);
+                world.SaveSnapshot(snapshotPath);
+
+                Assert.That(File.Exists(snapshotPath), Is.True);
+                Assert.That(File.ReadAllText(snapshotPath), Does.Contain("lastEvent"));
+
+                world.ResetState();
+                Assert.That(world.LastEvent, Is.EqualTo(PrototypeWorldEvent.None));
+
+                world.LoadSnapshot(snapshotPath);
+
+                Assert.That(world.DistrictId, Is.EqualTo("BarrioHondo"));
+                Assert.That(world.FrontId, Is.EqualTo("ElRespiroWorkshop"));
+                Assert.That(world.LastEvent, Is.EqualTo(PrototypeWorldEvent.BribeAccepted));
+                Assert.That(world.DirtyCash, Is.EqualTo(DirtyCashState.Hidden));
+                Assert.That(world.StatePressure, Is.EqualTo(PressureLevel.Low));
+                Assert.That(world.RuleStyleDecision, Is.EqualTo(RuleStyle.Bribe));
+                Assert.That(PrototypeDebugState.World, Does.Contain("LastEvent: BribeAccepted"));
+            }
+            finally
+            {
+                if (File.Exists(snapshotPath))
+                {
+                    File.Delete(snapshotPath);
+                }
+
+                Object.DestroyImmediate(worldObject);
+            }
         }
 
         [Test]

@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using UnityEngine;
 
 namespace ValleDePlata.Prototype
@@ -60,6 +61,21 @@ namespace ValleDePlata.Prototype
         MateoHumiliated
     }
 
+    [Serializable]
+    public sealed class PrototypeWorldStateSnapshot
+    {
+        public string districtId = "BarrioHondo";
+        public string frontId = "ElRespiroWorkshop";
+        public FrontControl frontControl = FrontControl.Rival;
+        public DirtyCashState dirtyCash = DirtyCashState.None;
+        public PressureLevel statePressure = PressureLevel.Low;
+        public SocialLevel peopleLove = SocialLevel.Neutral;
+        public SocialLevel fear = SocialLevel.Low;
+        public LieutenantTrust lieutenantTrust = LieutenantTrust.Professional;
+        public RuleStyle ruleStyleDecision = RuleStyle.None;
+        public PrototypeWorldEvent lastEvent = PrototypeWorldEvent.None;
+    }
+
     public sealed class PrototypeWorldState : MonoBehaviour
     {
         [SerializeField] private string districtId = "BarrioHondo";
@@ -79,6 +95,79 @@ namespace ValleDePlata.Prototype
         public LieutenantTrust LieutenantTrust { get; private set; }
         public RuleStyle RuleStyleDecision { get; private set; }
         public PrototypeWorldEvent LastEvent { get; private set; }
+
+        public PrototypeWorldStateSnapshot CaptureSnapshot()
+        {
+            return new PrototypeWorldStateSnapshot
+            {
+                districtId = DistrictId,
+                frontId = FrontId,
+                frontControl = FrontControl,
+                dirtyCash = DirtyCash,
+                statePressure = StatePressure,
+                peopleLove = PeopleLove,
+                fear = Fear,
+                lieutenantTrust = LieutenantTrust,
+                ruleStyleDecision = RuleStyleDecision,
+                lastEvent = LastEvent
+            };
+        }
+
+        public void ApplySnapshot(PrototypeWorldStateSnapshot snapshot)
+        {
+            if (snapshot == null)
+            {
+                throw new ArgumentNullException(nameof(snapshot));
+            }
+
+            districtId = string.IsNullOrWhiteSpace(snapshot.districtId) ? "BarrioHondo" : snapshot.districtId;
+            frontId = string.IsNullOrWhiteSpace(snapshot.frontId) ? "ElRespiroWorkshop" : snapshot.frontId;
+            FrontControl = snapshot.frontControl;
+            DirtyCash = snapshot.dirtyCash;
+            StatePressure = snapshot.statePressure;
+            PeopleLove = snapshot.peopleLove;
+            Fear = snapshot.fear;
+            LieutenantTrust = snapshot.lieutenantTrust;
+            RuleStyleDecision = snapshot.ruleStyleDecision;
+            LastEvent = snapshot.lastEvent;
+            UpdateDebugState();
+            Changed?.Invoke(this);
+        }
+
+        public string CaptureJson(bool prettyPrint = false)
+        {
+            return JsonUtility.ToJson(CaptureSnapshot(), prettyPrint);
+        }
+
+        public void ApplyJson(string json)
+        {
+            if (string.IsNullOrWhiteSpace(json))
+            {
+                throw new ArgumentException("World state JSON is empty.", nameof(json));
+            }
+
+            ApplySnapshot(JsonUtility.FromJson<PrototypeWorldStateSnapshot>(json));
+        }
+
+        public void SaveSnapshot(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                throw new ArgumentException("Snapshot path is empty.", nameof(path));
+            }
+
+            File.WriteAllText(path, CaptureJson(true));
+        }
+
+        public void LoadSnapshot(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                throw new ArgumentException("Snapshot path is empty.", nameof(path));
+            }
+
+            ApplyJson(File.ReadAllText(path));
+        }
 
         public void ResetState()
         {
