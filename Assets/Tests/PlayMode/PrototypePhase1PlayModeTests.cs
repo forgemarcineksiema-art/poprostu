@@ -1,6 +1,7 @@
 using System.Collections;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -162,6 +163,36 @@ namespace ValleDePlata.Tests
         }
 
         [UnityTest]
+        public IEnumerator MetricsReportPreservesCompleteCoverageWhenCurrentRunIsIncomplete()
+        {
+            SceneManager.LoadScene("Phase1_FeelPrototype");
+            yield return null;
+
+            var metrics = Object.FindAnyObjectByType<PrototypeRunMetrics>();
+            Assert.That(metrics, Is.Not.Null);
+
+            var reportFileName = "phase1_metrics_preserve_test.txt";
+            var reportPath = Path.Combine(Application.persistentDataPath, reportFileName);
+            File.WriteAllText(reportPath, "CoverageComplete: True\nCoverageStatus: Coverage complete\nSentinel: complete");
+
+            typeof(PrototypeRunMetrics)
+                .GetField("reportFileName", BindingFlags.Instance | BindingFlags.NonPublic)
+                ?.SetValue(metrics, reportFileName);
+
+            metrics.ResetRun();
+            metrics.RecordVehicleEnter();
+            metrics.WriteReport();
+
+            var report = File.ReadAllText(reportPath);
+            Assert.That(report, Does.Contain("CoverageComplete: True"));
+            Assert.That(report, Does.Contain("CoverageStatus: Coverage complete"));
+            Assert.That(report, Does.Contain("Sentinel: complete"));
+
+            File.Delete(reportPath);
+            File.Delete(reportPath + ".incomplete");
+        }
+
+        [UnityTest]
         public IEnumerator SceneBeatsCanProduceCompleteCoverage()
         {
             SceneManager.LoadScene("Phase1_FeelPrototype");
@@ -214,6 +245,9 @@ namespace ValleDePlata.Tests
             Assert.That(metrics.HasRouteCoverage, Is.True);
             Assert.That(metrics.CoverageStatus, Is.EqualTo("Coverage complete"));
             Assert.That(metrics.BuildSummary(), Does.Contain("ManualFeelGate: Required"));
+
+            metrics.WriteReport();
+            Assert.That(File.ReadAllText(Path.Combine(Application.persistentDataPath, "phase1_latest_run.txt")), Does.Contain("CoverageComplete: True"));
         }
 
         [UnityTest]

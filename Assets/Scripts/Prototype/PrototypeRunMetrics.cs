@@ -124,7 +124,17 @@ namespace ValleDePlata.Prototype
         public void WriteReport()
         {
             var path = Path.Combine(Application.persistentDataPath, reportFileName);
-            File.WriteAllText(path, BuildSummary());
+            var summary = BuildSummary();
+            if (!HasRouteCoverage && ExistingReportHasCompleteCoverage(path))
+            {
+                File.WriteAllText(path + ".incomplete", summary);
+                LastReportPath = path;
+                UpdateDebugState();
+                Debug.Log($"Phase 1 run metrics preserved complete coverage report at {path}");
+                return;
+            }
+
+            File.WriteAllText(path, summary);
             LastReportPath = path;
             UpdateDebugState();
             Debug.Log($"Phase 1 run metrics written to {path}");
@@ -177,6 +187,18 @@ namespace ValleDePlata.Prototype
             }
 
             target += label;
+        }
+
+        private static bool ExistingReportHasCompleteCoverage(string path)
+        {
+            if (!File.Exists(path))
+            {
+                return false;
+            }
+
+            var report = File.ReadAllText(path);
+            return report.Contains("CoverageComplete: True", System.StringComparison.OrdinalIgnoreCase)
+                && report.Contains("CoverageStatus: Coverage complete", System.StringComparison.OrdinalIgnoreCase);
         }
     }
 }
