@@ -67,6 +67,32 @@ namespace ValleDePlata.Tests
         }
 
         [Test]
+        public void Phase1SceneContainsBelievabilityLandmarksThatDoNotBlockGameplay()
+        {
+            EditorSceneManager.OpenScene(ScenePath);
+
+            var barrioSign = RequireNonBlockingDressing("Barrio Hondo overhead street sign");
+            var safeReturnArch = RequireNonBlockingDressing("Safe return alley arch");
+            RequireNonBlockingDressing("Safe return painted arrow");
+            RequireNonBlockingDressing("Laundry line north");
+            RequireNonBlockingDressing("Witness balcony cluster");
+            var riosDesk = RequireNonBlockingDressing("Rios checkpoint desk");
+            RequireNonBlockingDressing("Rios checkpoint awning");
+            var roadblockLeft = RequireNonBlockingDressing("Police roadblock barricade left");
+            var roadblockRight = RequireNonBlockingDressing("Police roadblock barricade right");
+            var workshopSign = RequireNonBlockingDressing("El Respiro workshop sign");
+            RequireNonBlockingDressing("Rooftop water tank");
+            RequireNonBlockingDressing("Barrio crate stack");
+
+            Assert.That(safeReturnArch.transform.position.z, Is.LessThan(-6f));
+            Assert.That(barrioSign.transform.position.z, Is.LessThan(-4f));
+            Assert.That(riosDesk.transform.position.z, Is.InRange(20f, 24.5f));
+            Assert.That(roadblockLeft.transform.position.z, Is.InRange(23f, 26f));
+            Assert.That(roadblockRight.transform.position.z, Is.InRange(23f, 26f));
+            Assert.That(workshopSign.transform.position.z, Is.GreaterThan(44f));
+        }
+
+        [Test]
         public void Phase2EventsChangeWorldState()
         {
             var worldObject = new GameObject("World State Test");
@@ -750,9 +776,43 @@ namespace ValleDePlata.Tests
             Object.DestroyImmediate(worldObject);
         }
 
+        [Test]
+        public void RouteProgressKeepsPressureEscapeWhenOverlappingStartTriggerFiresAfterSafeReturn()
+        {
+            var worldObject = new GameObject("Crackdown Route Overlap World State Test");
+            var routeObject = new GameObject("Crackdown Route Overlap Test");
+            var world = worldObject.AddComponent<PrototypeWorldState>();
+            var route = routeObject.AddComponent<PrototypeRouteProgress>();
+
+            route.AttachWorldState(world);
+            route.Configure(5);
+            world.ApplyEvent(PrototypeWorldEvent.PublicViolenceCommitted);
+            world.ApplyEvent(PrototypeWorldEvent.PressureCrackdownTriggered);
+
+            route.RegisterCheckpoint(3, "Workshop interaction stop");
+            route.RegisterCheckpoint(4, "Safe return");
+            route.RegisterCheckpoint(0, "Start on foot");
+
+            Assert.That(route.Outcome, Is.EqualTo(PrototypeRouteOutcome.PressureFailureEscape));
+            Assert.That(PrototypeDebugState.Route, Does.Contain("Pressure escape"));
+
+            Object.DestroyImmediate(routeObject);
+            Object.DestroyImmediate(worldObject);
+        }
+
         private static void RequireObject(string objectName)
         {
             Assert.That(GameObject.Find(objectName), Is.Not.Null, $"Missing required object: {objectName}");
+        }
+
+        private static GameObject RequireNonBlockingDressing(string objectName)
+        {
+            var target = GameObject.Find(objectName);
+            Assert.That(target, Is.Not.Null, $"Missing required dressing object: {objectName}");
+            Assert.That(target.layer, Is.EqualTo(PrototypeLayers.CameraIgnore), $"{objectName} should be on CameraIgnore so it cannot shorten the camera.");
+            var collider = target.GetComponent<Collider>();
+            Assert.That(collider == null || collider.enabled == false || collider.isTrigger, Is.True, $"{objectName} should not block the player, vehicle, or exit checks.");
+            return target;
         }
 
         private static T RequireComponent<T>(string objectName) where T : Component

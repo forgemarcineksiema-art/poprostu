@@ -86,6 +86,11 @@ namespace ValleDePlata.Prototype
 
         private void RegisterPressureFailureCheckpoint(string label)
         {
+            if (pressureEscapeRegistered)
+            {
+                return;
+            }
+
             if (IsSafeReturn(label))
             {
                 RegisterPressureEscape(label);
@@ -99,11 +104,6 @@ namespace ValleDePlata.Prototype
 
         private void RegisterPressureEscape(string label)
         {
-            if (pressureEscapeRegistered)
-            {
-                return;
-            }
-
             pressureEscapeRegistered = true;
             Outcome = PrototypeRouteOutcome.PressureFailureEscape;
             PrototypeDebugState.LastCheckpoint = string.IsNullOrWhiteSpace(label) ? "Safe return" : label;

@@ -93,6 +93,71 @@ namespace ValleDePlata.Editor
 
             var safeReturn = CreateCube("Safe return marker", new Vector3(0f, 0.04f, -8f), new Vector3(6f, 0.08f, 2.2f), routeGreen);
             PrototypeLayers.SetLayerRecursively(safeReturn, PrototypeLayers.CameraIgnore);
+
+            CreateBelievabilityDressing(wall, rust, patrolBlue, routeGreen);
+        }
+
+        private static void CreateBelievabilityDressing(Material wall, Material rust, Material patrolBlue, Material routeGreen)
+        {
+            var signRed = CreateMaterial("Prototype_DressingSignRed", new Color(0.62f, 0.14f, 0.1f));
+            var fadedBlue = CreateMaterial("Prototype_DressingFadedBlue", new Color(0.17f, 0.33f, 0.48f));
+            var sunYellow = CreateMaterial("Prototype_DressingSunYellow", new Color(0.86f, 0.62f, 0.18f));
+            var clothWhite = CreateMaterial("Prototype_DressingClothWhite", new Color(0.86f, 0.83f, 0.72f));
+            var warmWood = CreateMaterial("Prototype_DressingWarmWood", new Color(0.43f, 0.28f, 0.16f));
+            var darkMetal = CreateMaterial("Prototype_DressingDarkMetal", new Color(0.1f, 0.11f, 0.12f));
+
+            CreateDressingCube("Barrio Hondo overhead street sign", new Vector3(0f, 3.05f, -7.2f), new Vector3(5.8f, 0.36f, 0.18f), signRed);
+            CreateWorldText(
+                "Barrio Hondo overhead sign text",
+                "BARRIO HONDO",
+                new Vector3(0f, 3.08f, -7.33f),
+                new Vector3(0f, 180f, 0f),
+                0.16f,
+                Color.white);
+
+            CreateDressingCube("Safe return alley arch", new Vector3(0f, 2.15f, -8.9f), new Vector3(6.8f, 0.32f, 0.42f), darkMetal);
+            CreateDressingCube("Safe return alley arch left pillar", new Vector3(-3.25f, 1.05f, -8.9f), new Vector3(0.24f, 2.1f, 0.42f), darkMetal);
+            CreateDressingCube("Safe return alley arch right pillar", new Vector3(3.25f, 1.05f, -8.9f), new Vector3(0.24f, 2.1f, 0.42f), darkMetal);
+            CreateDressingCube("Safe return painted arrow", new Vector3(0f, 0.08f, -8.95f), new Vector3(1.8f, 0.025f, 0.7f), sunYellow);
+
+            CreateDressingCube("Laundry line north", new Vector3(-4.55f, 2.75f, 6.5f), new Vector3(0.05f, 0.05f, 13.5f), darkMetal);
+            CreateDressingCube("Laundry cloth red", new Vector3(-4.52f, 2.35f, 3.7f), new Vector3(0.05f, 0.72f, 0.55f), rust);
+            CreateDressingCube("Laundry cloth white", new Vector3(-4.52f, 2.28f, 6.1f), new Vector3(0.05f, 0.62f, 0.75f), clothWhite);
+            CreateDressingCube("Laundry cloth blue", new Vector3(-4.52f, 2.32f, 9.2f), new Vector3(0.05f, 0.68f, 0.65f), fadedBlue);
+
+            CreateDressingCube("Witness balcony cluster", new Vector3(-5.32f, 2.25f, 12.2f), new Vector3(0.42f, 0.22f, 3.2f), warmWood);
+            CreateDressingCube("Witness balcony rail", new Vector3(-5.05f, 2.55f, 12.2f), new Vector3(0.12f, 0.55f, 3.4f), darkMetal);
+            CreateDressingCube("Witness balcony shade", new Vector3(-5.2f, 3.02f, 12.2f), new Vector3(0.52f, 0.18f, 3.5f), fadedBlue);
+
+            CreateDressingCube("Rios checkpoint desk", new Vector3(2.35f, 0.48f, 22.1f), new Vector3(1.35f, 0.72f, 0.82f), warmWood);
+            CreateDressingCube("Rios checkpoint awning", new Vector3(3.05f, 1.95f, 22.25f), new Vector3(2.35f, 0.16f, 2.2f), sunYellow);
+            CreateWorldText(
+                "Rios checkpoint placard",
+                "RIOS",
+                new Vector3(2.35f, 0.95f, 21.63f),
+                new Vector3(0f, 180f, 0f),
+                0.1f,
+                Color.white);
+
+            CreateDressingCube("Police roadblock barricade left", new Vector3(-1.35f, 0.55f, 24.5f), new Vector3(1.85f, 0.32f, 0.28f), patrolBlue);
+            CreateDressingCube("Police roadblock barricade right", new Vector3(1.35f, 0.55f, 24.5f), new Vector3(1.85f, 0.32f, 0.28f), patrolBlue);
+            CreateDressingCube("Police roadblock warning stripe left", new Vector3(-1.35f, 0.76f, 24.32f), new Vector3(1.45f, 0.09f, 0.06f), sunYellow);
+            CreateDressingCube("Police roadblock warning stripe right", new Vector3(1.35f, 0.76f, 24.32f), new Vector3(1.45f, 0.09f, 0.06f), sunYellow);
+
+            CreateDressingCube("Rooftop water tank", new Vector3(-5.18f, 3.35f, 29f), new Vector3(1.1f, 0.95f, 1.1f), darkMetal, PrimitiveType.Cylinder);
+            CreateDressingCube("Rooftop water tank base", new Vector3(-5.18f, 2.82f, 29f), new Vector3(1.2f, 0.16f, 1.2f), wall);
+
+            CreateDressingCube("Barrio crate stack", new Vector3(-3.65f, 0.42f, 43f), new Vector3(1f, 0.84f, 0.85f), warmWood);
+            CreateDressingCube("Barrio crate stack top", new Vector3(-3.18f, 1.08f, 43.2f), new Vector3(0.72f, 0.48f, 0.62f), warmWood);
+
+            CreateDressingCube("El Respiro workshop sign", new Vector3(3.58f, 2.65f, 48.2f), new Vector3(0.24f, 0.72f, 3.65f), signRed);
+            CreateWorldText(
+                "El Respiro workshop sign text",
+                "EL RESPIRO",
+                new Vector3(3.43f, 2.66f, 48.2f),
+                new Vector3(0f, -90f, 0f),
+                0.12f,
+                Color.white);
         }
 
         private static void CreateFoundationProofGeometry(Material wall, Material rust)
@@ -426,6 +491,40 @@ namespace ValleDePlata.Editor
             cube.GetComponent<Renderer>().sharedMaterial = material;
             PrototypeLayers.SetLayerRecursively(cube, PrototypeLayers.WorldStatic);
             return cube;
+        }
+
+        private static GameObject CreateDressingCube(string name, Vector3 position, Vector3 scale, Material material, PrimitiveType primitiveType = PrimitiveType.Cube)
+        {
+            var dressing = GameObject.CreatePrimitive(primitiveType);
+            dressing.name = name;
+            dressing.transform.position = position;
+            dressing.transform.localScale = scale;
+            dressing.GetComponent<Renderer>().sharedMaterial = material;
+            var collider = dressing.GetComponent<Collider>();
+            if (collider != null)
+            {
+                collider.enabled = false;
+            }
+
+            PrototypeLayers.SetLayerRecursively(dressing, PrototypeLayers.CameraIgnore);
+            return dressing;
+        }
+
+        private static GameObject CreateWorldText(string name, string text, Vector3 position, Vector3 rotation, float characterSize, Color color)
+        {
+            var textObject = new GameObject(name);
+            textObject.transform.position = position;
+            textObject.transform.rotation = Quaternion.Euler(rotation);
+            textObject.transform.localScale = new Vector3(-1f, 1f, 1f);
+            var mesh = textObject.AddComponent<TextMesh>();
+            mesh.text = text;
+            mesh.anchor = TextAnchor.MiddleCenter;
+            mesh.alignment = TextAlignment.Center;
+            mesh.characterSize = characterSize;
+            mesh.fontSize = 72;
+            mesh.color = color;
+            PrototypeLayers.SetLayerRecursively(textObject, PrototypeLayers.CameraIgnore);
+            return textObject;
         }
 
         private static Material CreateMaterial(string name, Color color)

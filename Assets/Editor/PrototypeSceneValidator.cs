@@ -63,6 +63,18 @@ namespace ValleDePlata.Editor
             RequireObject("Tight camera recovery wall");
             RequireObject("Static civilian car obstacle");
             RequireObject("Safe return marker");
+            RequireNonBlockingDressing("Barrio Hondo overhead street sign");
+            RequireNonBlockingDressing("Safe return alley arch");
+            RequireNonBlockingDressing("Safe return painted arrow");
+            RequireNonBlockingDressing("Laundry line north");
+            RequireNonBlockingDressing("Witness balcony cluster");
+            RequireNonBlockingDressing("Rios checkpoint desk");
+            RequireNonBlockingDressing("Rios checkpoint awning");
+            RequireNonBlockingDressing("Police roadblock barricade left");
+            RequireNonBlockingDressing("Police roadblock barricade right");
+            RequireNonBlockingDressing("El Respiro workshop sign");
+            RequireNonBlockingDressing("Rooftop water tank");
+            RequireNonBlockingDressing("Barrio crate stack");
             RequireRouteCheckpoint(0, "Start on foot");
             RequireRouteCheckpoint(1, "Enter vehicle lane");
             RequireRouteCheckpoint(2, "Patrol pressure turn");
@@ -94,6 +106,26 @@ namespace ValleDePlata.Editor
             if (GameObject.Find(objectName) == null)
             {
                 Fail($"Missing required object: {objectName}");
+            }
+        }
+
+        private static void RequireNonBlockingDressing(string objectName)
+        {
+            var target = GameObject.Find(objectName);
+            if (target == null)
+            {
+                Fail($"Missing required dressing object: {objectName}");
+            }
+
+            if (target.layer != PrototypeLayers.CameraIgnore)
+            {
+                Fail($"{objectName} is on layer {LayerMask.LayerToName(target.layer)}, expected {LayerMask.LayerToName(PrototypeLayers.CameraIgnore)}.");
+            }
+
+            var collider = target.GetComponent<Collider>();
+            if (collider != null && collider.enabled && !collider.isTrigger)
+            {
+                Fail($"{objectName} has a blocking collider. Believability dressing must not affect camera, player, vehicle, or exit checks.");
             }
         }
 
