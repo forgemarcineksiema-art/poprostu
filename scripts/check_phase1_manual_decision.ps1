@@ -1,6 +1,7 @@
 param(
     [string]$ReportPath,
-    [switch]$AllowPending
+    [switch]$AllowPending,
+    [switch]$StatusOnly
 )
 
 $ErrorActionPreference = "Stop"
@@ -8,6 +9,16 @@ $ErrorActionPreference = "Stop"
 $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $repoRoot = Split-Path -Parent $scriptRoot
 $reportsDir = Join-Path $repoRoot "docs\prototype_reports"
+
+function Exit-WithDecisionCode {
+    param([int]$Code)
+
+    if ($StatusOnly) {
+        exit 0
+    }
+
+    exit $Code
+}
 
 function Get-LatestManualReport {
     if (-not (Test-Path -LiteralPath $reportsDir)) {
@@ -53,11 +64,11 @@ if ([string]::IsNullOrWhiteSpace($ReportPath)) {
         Write-Host "Phase 1 manual decision: pending"
         Write-Host "Reason: no docs\prototype_reports\phase1_manual_playtest_*.md report found."
         Write-Host "Run: powershell -NoProfile -ExecutionPolicy Bypass -File scripts\run_phase1_manual_gate.ps1"
-        if ($AllowPending) {
-            exit 0
+        if ($AllowPending -or $StatusOnly) {
+            Exit-WithDecisionCode -Code 0
         }
 
-        exit 2
+        Exit-WithDecisionCode -Code 2
     }
 
     $ReportPath = $latestReport.FullName
@@ -91,13 +102,13 @@ if ($accepted -and $checkedBlockers.Count -gt 0) {
     foreach ($blocker in $checkedBlockers) {
         Write-Host "  Blocker: $blocker"
     }
-    exit 4
+    Exit-WithDecisionCode -Code 4
 }
 
 if ($accepted) {
     Write-Host "Status: accepted"
     Write-Host "Phase 2 may start, assuming the written notes do not contradict the checked decision."
-    exit 0
+    Exit-WithDecisionCode -Code 0
 }
 
 if ($checkedBlockers.Count -gt 0) {
@@ -105,19 +116,19 @@ if ($checkedBlockers.Count -gt 0) {
     foreach ($blocker in $checkedBlockers) {
         Write-Host "  $blocker"
     }
-    exit 3
+    Exit-WithDecisionCode -Code 3
 }
 
 if (Test-AnyCheckedDecision -Lines $lines) {
     Write-Host "Status: unrecognized"
     Write-Host "Reason: a Phase 1 decision is checked, but it does not match the current gate labels."
-    exit 5
+    Exit-WithDecisionCode -Code 5
 }
 
 Write-Host "Status: pending"
 Write-Host "Reason: no Phase 1 decision checkbox is marked."
 if ($AllowPending) {
-    exit 0
+    Exit-WithDecisionCode -Code 0
 }
 
-exit 2
+Exit-WithDecisionCode -Code 2

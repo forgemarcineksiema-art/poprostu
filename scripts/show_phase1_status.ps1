@@ -7,6 +7,7 @@ $ErrorActionPreference = "Stop"
 $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $repoRoot = Split-Path -Parent $scriptRoot
 $logsDir = Join-Path $repoRoot "Logs"
+$decisionScript = Join-Path $scriptRoot "check_phase1_manual_decision.ps1"
 
 function Read-TestRunSummary {
     param(
@@ -102,8 +103,17 @@ try {
     }
 
     Write-Host ""
+    Write-Host "Manual decision:"
+    if (Test-Path -LiteralPath $decisionScript) {
+        & powershell -NoProfile -ExecutionPolicy Bypass -File $decisionScript -StatusOnly
+    } else {
+        Write-Host "  Decision checker missing: $decisionScript"
+    }
+
+    Write-Host ""
     Write-Host "Next command:"
     Write-Host "  powershell -NoProfile -ExecutionPolicy Bypass -File scripts\run_phase1_manual_gate.ps1"
+    Write-Host "  powershell -NoProfile -ExecutionPolicy Bypass -File scripts\check_phase1_manual_decision.ps1"
 
     $statusPaths = @(Get-GitStatusPaths)
     $diffPaths = @()

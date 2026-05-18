@@ -11,6 +11,7 @@ Add a small gate script that reads the manual Phase 1 playtest report and turns 
 ## Updated
 
 - `scripts/run_phase1_manual_gate.ps1` now prints the decision checker path and the follow-up command.
+- `scripts/show_phase1_status.ps1` now includes the manual decision status in its Phase 1 summary.
 
 ## Statuses
 
@@ -40,13 +41,21 @@ Status-only pending check:
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts\check_phase1_manual_decision.ps1 -AllowPending
 ```
 
+Status-only summary for dashboards:
+
+```text
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\check_phase1_manual_decision.ps1 -StatusOnly
+```
+
 ## Validation
 
 Commands:
 
 ```text
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts\check_phase1_manual_decision.ps1 -AllowPending
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\check_phase1_manual_decision.ps1 -StatusOnly
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts\run_phase1_manual_gate.ps1 -PrintPlanOnly
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\show_phase1_status.ps1
 ```
 
 Temporary report fixtures were also used to test accepted, blocked, and conflicting decisions.
@@ -54,7 +63,9 @@ Temporary report fixtures were also used to test accepted, blocked, and conflict
 Evidence:
 
 - Decision checker exits with code `0` under `-AllowPending`.
+- Decision checker exits with code `0` under `-StatusOnly` even when the decision is pending, blocked, conflicting, or unrecognized.
 - Decision checker reports `pending` when no manual report has an accepted or blocked decision.
+- Status checker includes the manual decision status without turning pending into a script failure.
 - Accepted fixture exits with code `0` and reports `Status: accepted`.
 - Blocked fixture exits with code `3` and reports the checked blocker.
 - Conflicting fixture exits with code `4` and reports accepted-plus-blocker conflict.
