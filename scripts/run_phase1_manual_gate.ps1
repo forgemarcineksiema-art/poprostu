@@ -13,6 +13,29 @@ $verifyScript = Join-Path $scriptRoot "verify_phase1.ps1"
 $playtestScript = Join-Path $scriptRoot "run_phase1_playtest.ps1"
 $reportScript = Join-Path $scriptRoot "new_phase1_playtest_report.ps1"
 
+function Write-ManualChecklist {
+    Write-Host "Manual playtest route:"
+    Write-Host "  1. Walk the tight street for several minutes."
+    Write-Host "  2. Enter the car."
+    Write-Host "  3. Drive the narrow route with at least one sharp turn."
+    Write-Host "  4. Pass the pressure checkpoint."
+    Write-Host "  5. Stop at the workshop."
+    Write-Host "  6. Exit the car."
+    Write-Host "  7. Use the workshop interaction."
+    Write-Host "  8. Return through Safe return."
+    Write-Host "  9. Keep the run active for at least 10 minutes."
+    Write-Host ""
+    Write-Host "Feel gates to judge before Phase 2:"
+    Write-Host "  - 10 minutes of walking and driving is not tiring."
+    Write-Host "  - Camera does not fight the player in the tight street."
+    Write-Host "  - Player understands character/front/car orientation."
+    Write-Host "  - Entering/exiting the car is smooth and not disorienting."
+    Write-Host "  - Car has tension on the narrow route without random physics chaos."
+    Write-Host "  - Workshop interaction is readable without frustration."
+    Write-Host "  - Route and patrol presence create tension without a full chase."
+    Write-Host "  - Controller/camera/driving fixes are clear after the test."
+}
+
 Write-Host "Phase 1 manual gate"
 Write-Host "Repo:        $repoRoot"
 Write-Host "Verify:      $verifyScript"
@@ -36,6 +59,8 @@ if ($SkipVerify -and -not $SkipBuild) {
 }
 
 Write-Host "  3. Generate manual feel report."
+Write-Host ""
+Write-ManualChecklist
 Write-Host ""
 
 if ($PrintPlanOnly) {

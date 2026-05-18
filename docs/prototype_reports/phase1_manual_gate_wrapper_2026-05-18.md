@@ -14,6 +14,7 @@ Add one morning command that chains the automated Phase 1 gate, manual playtest 
 - Launches `scripts/run_phase1_playtest.ps1`.
 - Generates the manual feel report with `scripts/new_phase1_playtest_report.ps1`.
 - Prints the exact sequence before doing work.
+- Prints the manual playtest route and feel gates before launch.
 - Supports `-PrintPlanOnly` for safe dry-run validation.
 
 ## Command
@@ -49,6 +50,7 @@ Evidence:
 - Script exits with code `0`.
 - Output prints the verify, playtest, and report paths.
 - Output prints the three-step sequence.
+- Output prints the route checklist and Phase 1 feel gates.
 
 ## Limit
 
