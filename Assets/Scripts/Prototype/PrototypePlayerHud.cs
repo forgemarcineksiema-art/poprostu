@@ -53,6 +53,18 @@ namespace ValleDePlata.Prototype
             return $"E / A  {CapitalizeFirst(prompt.Trim())}";
         }
 
+        public static string BuildStatusLine(string mode, string pressure, string performance)
+        {
+            var parts = new[]
+            {
+                string.IsNullOrWhiteSpace(mode) ? string.Empty : mode.Trim(),
+                string.IsNullOrWhiteSpace(pressure) ? string.Empty : pressure.Trim(),
+                string.IsNullOrWhiteSpace(performance) ? string.Empty : performance.Trim()
+            };
+
+            return string.Join(" | ", Array.FindAll(parts, part => !string.IsNullOrWhiteSpace(part)));
+        }
+
         private void Awake()
         {
             objectiveStyle.fontSize = 22;
@@ -91,8 +103,8 @@ namespace ValleDePlata.Prototype
                 DrawCenteredPanel(Screen.height - 86f, Mathf.Min(520f, Screen.width - 32f), 44f, prompt, promptStyle, new Color(0.08f, 0.07f, 0.045f, 0.78f));
             }
 
-            var status = $"{PrototypeDebugState.Mode} | {PrototypeDebugState.Pressure}";
-            GUI.Label(new Rect(20f, Screen.height - 36f, 420f, 24f), status, statusStyle);
+            var status = BuildStatusLine(PrototypeDebugState.Mode, PrototypeDebugState.Pressure, PrototypeDebugState.Performance);
+            GUI.Label(new Rect(20f, Screen.height - 36f, Mathf.Min(760f, Screen.width - 40f), 24f), status, statusStyle);
         }
 
         private static void DrawCenteredPanel(float y, float width, float height, string text, GUIStyle style, Color color)

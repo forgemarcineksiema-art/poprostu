@@ -48,6 +48,7 @@ namespace ValleDePlata.Editor
             CreatePlayerHud(objectiveMarker);
             CreateCamera(player);
             CreateRunMetrics();
+            CreatePerformanceProbe();
             CreateCursorController();
             CreateDebugHud();
 
@@ -568,6 +569,12 @@ namespace ValleDePlata.Editor
         {
             var metrics = new GameObject("Phase 1 Run Metrics");
             metrics.AddComponent<PrototypeRunMetrics>();
+        }
+
+        private static void CreatePerformanceProbe()
+        {
+            var probe = new GameObject("Prototype Performance Probe");
+            probe.AddComponent<PrototypePerformanceProbe>();
         }
 
         private static GameObject CreateCube(string name, Vector3 position, Vector3 scale, Material material)

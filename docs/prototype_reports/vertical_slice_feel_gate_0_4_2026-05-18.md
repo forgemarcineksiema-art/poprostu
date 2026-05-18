@@ -1,4 +1,4 @@
-﻿# Vertical Slice Feel Gate 0.4 - 2026-05-18 17:31:26
+﻿# Vertical Slice Feel Gate 0.4 - 2026-05-18 18:12:41
 
 ## Purpose
 
@@ -12,6 +12,9 @@ It does not add combat, police AI, new missions, new districts, animation system
 
 - Metrics path: C:\Users\Marcin\AppData\LocalLow\DefaultCompany\My project\phase1_latest_run.txt
 - Coverage gate: complete
+- Average FPS: 1558.1
+- Worst frame: 259.8ms
+- Performance status: Frame spikes
 - Manual decision source: C:\Users\Marcin\Documents\hahahaha\My project\docs\prototype_reports\phase1_manual_playtest_2026-05-18_09-01-46.md
 - Manual decision status before 0.4: accepted
 
@@ -28,6 +31,9 @@ RouteOutcome: Complete
 MaxSpeed: 1.9
 LastInteraction: Inspect workshop shutter
 LastCheckpoint: Safe return
+AverageFps: 1558.1
+WorstFrameMs: 259.8
+PerformanceStatus: Frame spikes
 CoverageComplete: True
 CoverageStatus: Coverage complete
 ManualFeelGate: Required

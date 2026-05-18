@@ -52,6 +52,21 @@ function Read-ManualDecisionStatus {
     return "pending"
 }
 
+function Read-MetricValue {
+    param(
+        [string]$Text,
+        [string]$Name,
+        [string]$Fallback
+    )
+
+    $match = [regex]::Match($Text, "(?m)^${Name}:\s*(.+?)\s*$")
+    if ($match.Success) {
+        return $match.Groups[1].Value.Trim()
+    }
+
+    return $Fallback
+}
+
 if ([string]::IsNullOrWhiteSpace($ManualReportPath)) {
     $ManualReportPath = Find-LatestManualReport
 }
@@ -69,6 +84,9 @@ $metricsText = if (Test-Path -LiteralPath $MetricsPath) {
 
 $coverageComplete = $metricsText -match "CoverageComplete:\s*True"
 $coverageLabel = if ($coverageComplete) { "complete" } else { "missing_or_unverified" }
+$averageFps = Read-MetricValue -Text $metricsText -Name "AverageFps" -Fallback "not recorded"
+$worstFrameMs = Read-MetricValue -Text $metricsText -Name "WorstFrameMs" -Fallback "not recorded"
+$performanceStatus = Read-MetricValue -Text $metricsText -Name "PerformanceStatus" -Fallback "not recorded"
 $manualDecisionStatus = Read-ManualDecisionStatus -Path $ManualReportPath
 $manualReportLabel = if ([string]::IsNullOrWhiteSpace($ManualReportPath)) { "not found" } else { $ManualReportPath }
 $now = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
@@ -94,6 +112,9 @@ It does not add combat, police AI, new missions, new districts, animation system
 
 - Metrics path: $MetricsPath
 - Coverage gate: $coverageLabel
+- Average FPS: $averageFps
+- Worst frame: ${worstFrameMs}ms
+- Performance status: $performanceStatus
 - Manual decision source: $manualReportLabel
 - Manual decision status before 0.4: $manualDecisionStatus
 

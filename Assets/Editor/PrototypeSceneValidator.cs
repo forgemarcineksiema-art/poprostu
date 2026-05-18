@@ -29,6 +29,7 @@ namespace ValleDePlata.Editor
             RequireComponent<PrototypeDebugHud>("Prototype Debug HUD");
             RequireComponent<PrototypePlayerHud>("Prototype Player HUD");
             RequireComponent<PrototypeRunMetrics>("Phase 1 Run Metrics");
+            RequireComponent<PrototypePerformanceProbe>("Prototype Performance Probe");
             RequireComponent<PrototypeWorldState>("Prototype World State");
             RequireComponent<PrototypeMissionSpine>("Pierwszy Front Mission Spine");
             RequireComponent<PrototypeObjectiveMarker>("Prototype Objective Marker");

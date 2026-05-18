@@ -10,6 +10,7 @@ namespace ValleDePlata.Prototype
         [SerializeField] private bool writeReportOnQuit = true;
 
         private float startTime;
+        private readonly PrototypePerformanceSampler performance = new();
 
         public static PrototypeRunMetrics Active { get; private set; }
 
@@ -25,6 +26,9 @@ namespace ValleDePlata.Prototype
         public string LastCheckpoint { get; private set; } = "None";
         public string LastReportPath { get; private set; } = "Not written";
         public PrototypeRouteOutcome RouteOutcome { get; private set; } = PrototypeRouteOutcome.InProgress;
+        public float AverageFps => performance.AverageFps;
+        public float WorstFrameMs => performance.WorstFrameMs;
+        public string PerformanceStatus => performance.Status;
         public bool HasRouteCoverage =>
             VehicleEntryCount > 0
             && VehicleExitCount > 0
@@ -49,6 +53,7 @@ namespace ValleDePlata.Prototype
             LastCheckpoint = "None";
             LastReportPath = "Not written";
             RouteOutcome = PrototypeRouteOutcome.InProgress;
+            performance.Reset();
             UpdateDebugState();
         }
 
@@ -97,6 +102,12 @@ namespace ValleDePlata.Prototype
             UpdateDebugState();
         }
 
+        public void RecordFrameTime(float unscaledDeltaTime)
+        {
+            performance.RecordFrame(unscaledDeltaTime);
+            UpdateDebugState();
+        }
+
         public string BuildSummary()
         {
             return string.Join(
@@ -113,6 +124,9 @@ namespace ValleDePlata.Prototype
                 $"MaxSpeed: {MaxSpeed.ToString("0.0", CultureInfo.InvariantCulture)}",
                 $"LastInteraction: {LastInteraction}",
                 $"LastCheckpoint: {LastCheckpoint}",
+                $"AverageFps: {AverageFps.ToString("0.0", CultureInfo.InvariantCulture)}",
+                $"WorstFrameMs: {WorstFrameMs.ToString("0.0", CultureInfo.InvariantCulture)}",
+                $"PerformanceStatus: {PerformanceStatus}",
                 $"CoverageComplete: {HasRouteCoverage}",
                 $"CoverageStatus: {CoverageStatus}",
                 "ManualFeelGate: Required");
@@ -182,6 +196,7 @@ namespace ValleDePlata.Prototype
                 $"cp {CompletedCheckpointCount} | pressure {PressureEntryCount} | int {InteractionCount} | " +
                 $"{RouteOutcome} | " +
                 (HasRouteCoverage ? "coverage OK" : $"missing {BuildMissingCoverageSummary()}");
+            PrototypeDebugState.Performance = performance.BuildHudLine();
         }
 
         private static void AppendMissing(ref string target, bool passed, string label)

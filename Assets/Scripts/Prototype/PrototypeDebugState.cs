@@ -12,6 +12,7 @@ namespace ValleDePlata.Prototype
         public static string WorldReaction = "World reaction: none";
         public static string Mission = "Mission: not initialized";
         public static string Metrics = "No run";
+        public static string Performance = "FPS -- | worst --ms | No samples";
         public static float Speed;
     }
 }

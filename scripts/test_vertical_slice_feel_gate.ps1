@@ -53,6 +53,9 @@ RouteOutcome: SafeReturnComplete
 MaxSpeed: 8.8
 LastInteraction: Pay Rios bribe
 LastCheckpoint: Safe return
+AverageFps: 58.2
+WorstFrameMs: 48.0
+PerformanceStatus: Frame spikes
 CoverageComplete: True
 CoverageStatus: Coverage complete
 ManualFeelGate: Required
@@ -78,6 +81,9 @@ ManualFeelGate: Required
     $completeText = Get-Content -LiteralPath $completeReport -Raw
     Assert-Contains -Name "complete report" -Content $completeText -Expected "# Vertical Slice Feel Gate 0.4"
     Assert-Contains -Name "complete report" -Content $completeText -Expected "Coverage gate: complete"
+    Assert-Contains -Name "complete report" -Content $completeText -Expected "Average FPS: 58.2"
+    Assert-Contains -Name "complete report" -Content $completeText -Expected "Worst frame: 48.0ms"
+    Assert-Contains -Name "complete report" -Content $completeText -Expected "Performance status: Frame spikes"
     Assert-Contains -Name "complete report" -Content $completeText -Expected "Manual decision source: $manualReport"
     Assert-Contains -Name "complete report" -Content $completeText -Expected "Manual retest required after readability pass 0.3"
     Assert-Contains -Name "complete report" -Content $completeText -Expected "Camera/Input Feel"

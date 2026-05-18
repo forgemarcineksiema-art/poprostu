@@ -183,6 +183,57 @@ namespace ValleDePlata.Tests
         }
 
         [Test]
+        public void PerformanceSamplerReportsAverageWorstFrameAndStatus()
+        {
+            var samplerType = System.Type.GetType("ValleDePlata.Prototype.PrototypePerformanceSampler, ValleDePlata.Prototype");
+            Assert.That(samplerType, Is.Not.Null, "PrototypePerformanceSampler type is missing.");
+
+            var sampler = System.Activator.CreateInstance(samplerType);
+            var recordMethod = samplerType.GetMethod("RecordFrame", BindingFlags.Public | BindingFlags.Instance);
+            var averageFpsProperty = samplerType.GetProperty("AverageFps");
+            var worstFrameMsProperty = samplerType.GetProperty("WorstFrameMs");
+            var statusProperty = samplerType.GetProperty("Status");
+            Assert.That(recordMethod, Is.Not.Null);
+            Assert.That(averageFpsProperty, Is.Not.Null);
+            Assert.That(worstFrameMsProperty, Is.Not.Null);
+            Assert.That(statusProperty, Is.Not.Null);
+
+            recordMethod.Invoke(sampler, new object[] { 1f / 60f });
+            recordMethod.Invoke(sampler, new object[] { 1f / 30f });
+            recordMethod.Invoke(sampler, new object[] { 1f / 20f });
+
+            var averageFps = (float)averageFpsProperty.GetValue(sampler);
+            var worstFrameMs = (float)worstFrameMsProperty.GetValue(sampler);
+            var status = (string)statusProperty.GetValue(sampler);
+
+            Assert.That(averageFps, Is.InRange(29f, 31f));
+            Assert.That(worstFrameMs, Is.EqualTo(50f).Within(0.1f));
+            Assert.That(status, Is.EqualTo("Frame spikes"));
+        }
+
+        [Test]
+        public void Phase1SceneContainsPerformanceProbeForFeelGate()
+        {
+            EditorSceneManager.OpenScene(ScenePath);
+
+            RequireComponentByName("Prototype Performance Probe", "PrototypePerformanceProbe");
+        }
+
+        [Test]
+        public void PlayerHudFormatsPerformanceInStatusLine()
+        {
+            var hudType = System.Type.GetType("ValleDePlata.Prototype.PrototypePlayerHud, ValleDePlata.Prototype");
+            Assert.That(hudType, Is.Not.Null, "PrototypePlayerHud type is missing.");
+
+            var statusMethod = hudType.GetMethod("BuildStatusLine", BindingFlags.Public | BindingFlags.Static);
+            Assert.That(statusMethod, Is.Not.Null);
+
+            var status = (string)statusMethod.Invoke(null, new object[] { "Mode: Driving", "Pressure: Patrol", "FPS 58 | worst 24ms" });
+
+            Assert.That(status, Is.EqualTo("Mode: Driving | Pressure: Patrol | FPS 58 | worst 24ms"));
+        }
+
+        [Test]
         public void Phase2EventsChangeWorldState()
         {
             var worldObject = new GameObject("World State Test");

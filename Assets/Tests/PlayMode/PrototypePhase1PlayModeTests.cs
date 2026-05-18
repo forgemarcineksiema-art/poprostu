@@ -129,6 +129,9 @@ namespace ValleDePlata.Tests
             var summary = metrics.BuildSummary();
             Assert.That(summary, Does.Contain("Phase 1 Feel Prototype Run"));
             Assert.That(summary, Does.Contain("Interactions: 1"));
+            Assert.That(summary, Does.Contain("AverageFps:"));
+            Assert.That(summary, Does.Contain("WorstFrameMs:"));
+            Assert.That(summary, Does.Contain("PerformanceStatus:"));
             Assert.That(summary, Does.Contain("ManualFeelGate: Required"));
         }
 
