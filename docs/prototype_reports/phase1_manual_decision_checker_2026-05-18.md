@@ -7,6 +7,7 @@ Add a small gate script that reads the manual Phase 1 playtest report and turns 
 ## Created
 
 - `scripts/check_phase1_manual_decision.ps1`.
+- `scripts/test_phase1_manual_decision.ps1`.
 
 ## Updated
 
@@ -47,6 +48,12 @@ Status-only summary for dashboards:
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts\check_phase1_manual_decision.ps1 -StatusOnly
 ```
 
+Regression test:
+
+```text
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\test_phase1_manual_decision.ps1
+```
+
 ## Validation
 
 Commands:
@@ -54,11 +61,12 @@ Commands:
 ```text
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts\check_phase1_manual_decision.ps1 -AllowPending
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts\check_phase1_manual_decision.ps1 -StatusOnly
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\test_phase1_manual_decision.ps1
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts\run_phase1_manual_gate.ps1 -PrintPlanOnly
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts\show_phase1_status.ps1
 ```
 
-Temporary report fixtures were also used to test accepted, blocked, and conflicting decisions.
+The regression test creates temporary report fixtures for pending, accepted, blocked, conflicting, unrecognized, and status-only decisions.
 
 Evidence:
 
@@ -69,6 +77,7 @@ Evidence:
 - Accepted fixture exits with code `0` and reports `Status: accepted`.
 - Blocked fixture exits with code `3` and reports the checked blocker.
 - Conflicting fixture exits with code `4` and reports accepted-plus-blocker conflict.
+- Regression test exits with code `0` and prints `Phase 1 manual decision checker tests passed.`
 - Manual gate dry-run prints the decision checker path.
 - Manual gate dry-run prints the follow-up decision step.
 
