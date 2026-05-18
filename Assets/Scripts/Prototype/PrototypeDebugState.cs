@@ -8,6 +8,8 @@ namespace ValleDePlata.Prototype
         public static string Pressure = "Quiet";
         public static string Route = "Not started";
         public static string LastCheckpoint = "None";
+        public static string World = "World State: not initialized";
+        public static string WorldReaction = "World reaction: none";
         public static string Metrics = "No run";
         public static float Speed;
     }

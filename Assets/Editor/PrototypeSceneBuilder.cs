@@ -37,6 +37,7 @@ namespace ValleDePlata.Editor
             var player = CreatePlayer();
             CreateVehicle();
             CreateRoute(routeGreen);
+            CreateWorldState();
             CreateCamera(player);
             CreateRunMetrics();
             CreateDebugHud();
@@ -66,12 +67,142 @@ namespace ValleDePlata.Editor
             CreateCube("Return lane blocker", new Vector3(-2.2f, 0.6f, 40f), new Vector3(2.2f, 1.2f, 1.2f), rust);
             CreateCube("Workshop shutter interactable", new Vector3(3.85f, 1.15f, 49f), new Vector3(0.35f, 2.3f, 4.3f), rust).AddComponent<PrototypeInteractable>();
             CreateCube("Static civilian car obstacle", new Vector3(-2.35f, 0.45f, 18f), new Vector3(2f, 0.9f, 4f), rust);
+            CreatePublicViolenceMicrotest(rust, patrolBlue, routeGreen);
+            CreateBribeMicrotest(rust, patrolBlue, routeGreen);
+            CreateMateoMicrotest(rust, patrolBlue, routeGreen);
 
             var patrol = CreateCube("Pressure patrol marker", new Vector3(0f, 0.55f, 34f), new Vector3(2.2f, 1.1f, 2.2f), patrolBlue);
             patrol.GetComponent<Collider>().isTrigger = true;
             patrol.AddComponent<PrototypePressureZone>();
 
             CreateCube("Safe return marker", new Vector3(0f, 0.04f, -8f), new Vector3(6f, 0.08f, 2.2f), routeGreen);
+        }
+
+        private static void CreatePublicViolenceMicrotest(Material rust, Material patrolBlue, Material routeGreen)
+        {
+            var target = CreateCube("Public violence test target", new Vector3(-3.1f, 0.8f, 10f), new Vector3(0.7f, 1.6f, 0.7f), rust);
+            var interactable = target.AddComponent<PrototypeInteractable>();
+            interactable.Configure(
+                "Use public violence",
+                "Street saw the violence",
+                PrototypeWorldEvent.PublicViolenceCommitted);
+
+            AddReactionMarker(
+                PrototypeWorldEvent.PublicViolenceCommitted,
+                "Civilian panic marker",
+                new Vector3(-4.1f, 0.75f, 12f),
+                new Vector3(0.6f, 1.5f, 0.6f),
+                routeGreen,
+                "Civilians scatter from Pablo's show of force",
+                new Color(0.18f, 0.42f, 0.32f),
+                new Color(0.95f, 0.7f, 0.18f));
+            AddReactionMarker(
+                PrototypeWorldEvent.PublicViolenceCommitted,
+                "Shop shutter closes marker",
+                new Vector3(4.55f, 1.05f, 13.5f),
+                new Vector3(0.25f, 2.1f, 2.6f),
+                rust,
+                "Shop closes after the public violence",
+                new Color(0.55f, 0.22f, 0.13f),
+                new Color(0.12f, 0.08f, 0.06f));
+            AddReactionMarker(
+                PrototypeWorldEvent.PublicViolenceCommitted,
+                "Police pressure moves closer marker",
+                new Vector3(1.6f, 0.55f, 18f),
+                new Vector3(1.6f, 1.1f, 1.6f),
+                patrolBlue,
+                "Patrol shifts closer after witnesses talk",
+                new Color(0.08f, 0.16f, 0.28f),
+                new Color(0.08f, 0.32f, 0.62f));
+        }
+
+        private static void CreateBribeMicrotest(Material rust, Material patrolBlue, Material routeGreen)
+        {
+            var officer = CreateCube("Rios bribe test officer", new Vector3(3.15f, 0.85f, 22f), new Vector3(0.75f, 1.7f, 0.75f), patrolBlue);
+            officer.AddComponent<PrototypeInteractable>().Configure(
+                "Pay Rios bribe",
+                "Rios lets Pablo pass but remembers",
+                PrototypeWorldEvent.BribeAccepted);
+
+            AddReactionMarker(
+                PrototypeWorldEvent.BribeAccepted,
+                "Bribe roadblock opens marker",
+                new Vector3(0f, 0.6f, 24.5f),
+                new Vector3(4f, 1.2f, 0.35f),
+                patrolBlue,
+                "Roadblock opens after the bribe",
+                new Color(0.08f, 0.16f, 0.28f),
+                new Color(0.18f, 0.42f, 0.32f));
+            AddReactionMarker(
+                PrototypeWorldEvent.BribeAccepted,
+                "Rios leverage marker",
+                new Vector3(4.2f, 1.15f, 23f),
+                new Vector3(0.35f, 2.3f, 1.7f),
+                rust,
+                "Rios now has leverage over Pablo",
+                new Color(0.55f, 0.22f, 0.13f),
+                new Color(0.7f, 0.54f, 0.18f));
+            AddReactionMarker(
+                PrototypeWorldEvent.BribeAccepted,
+                "Risk cargo hidden marker",
+                new Vector3(-1.7f, 0.45f, 23f),
+                new Vector3(1.4f, 0.9f, 1.4f),
+                routeGreen,
+                "Risk cargo stays hidden after the bribe",
+                new Color(0.18f, 0.42f, 0.32f),
+                new Color(0.1f, 0.18f, 0.14f));
+        }
+
+        private static void CreateMateoMicrotest(Material rust, Material patrolBlue, Material routeGreen)
+        {
+            var trusted = CreateCube("Mateo protected test contact", new Vector3(-3.2f, 0.85f, 31f), new Vector3(0.75f, 1.7f, 0.75f), routeGreen);
+            trusted.AddComponent<PrototypeInteractable>().Configure(
+                "Protect Mateo",
+                "Mateo warns early",
+                PrototypeWorldEvent.MateoProtected);
+
+            var humiliated = CreateCube("Mateo humiliated test contact", new Vector3(3.2f, 0.85f, 31f), new Vector3(0.75f, 1.7f, 0.75f), rust);
+            humiliated.AddComponent<PrototypeInteractable>().Configure(
+                "Humiliate Mateo",
+                "Mateo warns too late",
+                PrototypeWorldEvent.MateoHumiliated);
+
+            AddReactionMarker(
+                PrototypeWorldEvent.MateoProtected,
+                "Mateo early warning marker",
+                new Vector3(-2.2f, 0.45f, 36f),
+                new Vector3(1.8f, 0.9f, 1.8f),
+                routeGreen,
+                "Mateo gives the warning before Pablo reaches the patrol",
+                new Color(0.18f, 0.42f, 0.32f),
+                new Color(0.35f, 0.75f, 0.48f));
+            AddReactionMarker(
+                PrototypeWorldEvent.MateoHumiliated,
+                "Mateo late warning marker",
+                new Vector3(2.2f, 0.45f, 36f),
+                new Vector3(1.8f, 0.9f, 1.8f),
+                patrolBlue,
+                "Mateo withholds the warning until the patrol is close",
+                new Color(0.08f, 0.16f, 0.28f),
+                new Color(0.62f, 0.12f, 0.1f));
+        }
+
+        private static void AddReactionMarker(
+            PrototypeWorldEvent reactsTo,
+            string name,
+            Vector3 position,
+            Vector3 scale,
+            Material material,
+            string message,
+            Color idleColor,
+            Color reactedColor)
+        {
+            var marker = CreateCube(name, position, scale, material);
+            marker.AddComponent<PrototypeWorldReactionMarker>().Configure(
+                reactsTo,
+                message,
+                idleColor,
+                reactedColor);
         }
 
         private static PrototypePlayerController CreatePlayer()
@@ -156,6 +287,12 @@ namespace ValleDePlata.Editor
         {
             var debug = new GameObject("Prototype Debug HUD");
             debug.AddComponent<PrototypeDebugHud>();
+        }
+
+        private static void CreateWorldState()
+        {
+            var worldState = new GameObject("Prototype World State");
+            worldState.AddComponent<PrototypeWorldState>();
         }
 
         private static void CreateRunMetrics()

@@ -20,8 +20,21 @@ namespace ValleDePlata.Tests
             RequireComponent<PrototypeCameraRig>("Prototype Camera Rig");
             RequireComponent<PrototypeDebugHud>("Prototype Debug HUD");
             RequireComponent<PrototypeRunMetrics>("Phase 1 Run Metrics");
+            RequireComponent<PrototypeWorldState>("Prototype World State");
             RequireComponent<PrototypePressureZone>("Pressure patrol marker");
             RequireComponent<PrototypeInteractable>("Workshop shutter interactable");
+            RequireComponent<PrototypeInteractable>("Public violence test target");
+            RequireComponent<PrototypeWorldReactionMarker>("Civilian panic marker");
+            RequireComponent<PrototypeWorldReactionMarker>("Shop shutter closes marker");
+            RequireComponent<PrototypeWorldReactionMarker>("Police pressure moves closer marker");
+            RequireComponent<PrototypeInteractable>("Rios bribe test officer");
+            RequireComponent<PrototypeWorldReactionMarker>("Bribe roadblock opens marker");
+            RequireComponent<PrototypeWorldReactionMarker>("Rios leverage marker");
+            RequireComponent<PrototypeWorldReactionMarker>("Risk cargo hidden marker");
+            RequireComponent<PrototypeInteractable>("Mateo protected test contact");
+            RequireComponent<PrototypeInteractable>("Mateo humiliated test contact");
+            RequireComponent<PrototypeWorldReactionMarker>("Mateo early warning marker");
+            RequireComponent<PrototypeWorldReactionMarker>("Mateo late warning marker");
             RequireComponent<PrototypeRouteProgress>("Phase 1 Route Progress");
             RequireObject("Narrow asphalt route");
             RequireObject("Tight corner block");
@@ -33,6 +46,44 @@ namespace ValleDePlata.Tests
             RequireRouteCheckpoint(4, "Safe return");
 
             Assert.That(Camera.main, Is.Not.Null);
+        }
+
+        [Test]
+        public void Phase2EventsChangeWorldState()
+        {
+            var worldObject = new GameObject("World State Test");
+            var world = worldObject.AddComponent<PrototypeWorldState>();
+
+            world.ResetState();
+            world.ApplyEvent(PrototypeWorldEvent.PublicViolenceCommitted);
+
+            Assert.That(world.Fear, Is.EqualTo(SocialLevel.High));
+            Assert.That(world.PeopleLove, Is.EqualTo(SocialLevel.Low));
+            Assert.That(world.StatePressure, Is.EqualTo(PressureLevel.Medium));
+            Assert.That(world.RuleStyleDecision, Is.EqualTo(RuleStyle.ShowOfForce));
+            Assert.That(world.LastEvent, Is.EqualTo(PrototypeWorldEvent.PublicViolenceCommitted));
+            Assert.That(PrototypeDebugState.World, Does.Contain("LastEvent: PublicViolenceCommitted"));
+
+            world.ResetState();
+            world.ApplyEvent(PrototypeWorldEvent.PublicViolenceCommitted);
+            world.ApplyEvent(PrototypeWorldEvent.BribeAccepted);
+
+            Assert.That(world.StatePressure, Is.EqualTo(PressureLevel.Low));
+            Assert.That(world.DirtyCash, Is.EqualTo(DirtyCashState.Hidden));
+            Assert.That(world.RuleStyleDecision, Is.EqualTo(RuleStyle.Bribe));
+            Assert.That(world.LastEvent, Is.EqualTo(PrototypeWorldEvent.BribeAccepted));
+
+            world.ResetState();
+            world.ApplyEvent(PrototypeWorldEvent.MateoProtected);
+            Assert.That(world.LieutenantTrust, Is.EqualTo(LieutenantTrust.Trusted));
+            Assert.That(world.LastEvent, Is.EqualTo(PrototypeWorldEvent.MateoProtected));
+
+            world.ResetState();
+            world.ApplyEvent(PrototypeWorldEvent.MateoHumiliated);
+            Assert.That(world.LieutenantTrust, Is.EqualTo(LieutenantTrust.Humiliated));
+            Assert.That(world.LastEvent, Is.EqualTo(PrototypeWorldEvent.MateoHumiliated));
+
+            Object.DestroyImmediate(worldObject);
         }
 
         [Test]

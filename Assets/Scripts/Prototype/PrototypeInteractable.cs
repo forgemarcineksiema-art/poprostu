@@ -6,6 +6,7 @@ namespace ValleDePlata.Prototype
     {
         [SerializeField] private string prompt = "Inspect workshop shutter";
         [SerializeField] private string usedMessage = "Workshop contact noted";
+        [SerializeField] private PrototypeWorldEvent worldEvent = PrototypeWorldEvent.None;
         [SerializeField] private Renderer[] highlightRenderers;
         [SerializeField] private Color idleColor = new(0.7f, 0.62f, 0.46f);
         [SerializeField] private Color usedColor = new(0.35f, 0.62f, 0.52f);
@@ -14,11 +15,19 @@ namespace ValleDePlata.Prototype
 
         public string Prompt => used ? usedMessage : prompt;
 
+        public void Configure(string nextPrompt, string nextUsedMessage, PrototypeWorldEvent nextWorldEvent)
+        {
+            prompt = nextPrompt;
+            usedMessage = nextUsedMessage;
+            worldEvent = nextWorldEvent;
+        }
+
         public void Interact()
         {
             if (!used)
             {
                 PrototypeRunMetrics.Active?.RecordInteraction(prompt);
+                PrototypeWorldState.Active?.ApplyEvent(worldEvent);
             }
 
             used = true;

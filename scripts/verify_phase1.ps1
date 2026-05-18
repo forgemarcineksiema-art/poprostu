@@ -106,4 +106,4 @@ if (-not $SkipBuild) {
 
 Write-Host ""
 Write-Host "Phase 1 automated verification passed."
-Write-Host "Manual feel gate is still required before Phase 2."
+Write-Host "Manual feel gate status is tracked by scripts\check_phase1_manual_decision.ps1."

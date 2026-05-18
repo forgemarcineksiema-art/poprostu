@@ -86,7 +86,7 @@ namespace ValleDePlata.Tests
             yield return null;
 
             var metrics = Object.FindAnyObjectByType<PrototypeRunMetrics>();
-            var interactable = Object.FindAnyObjectByType<PrototypeInteractable>();
+            var interactable = GameObject.Find("Workshop shutter interactable")?.GetComponent<PrototypeInteractable>();
 
             Assert.That(metrics, Is.Not.Null);
             Assert.That(interactable, Is.Not.Null);
@@ -142,7 +142,7 @@ namespace ValleDePlata.Tests
             var vehicle = Object.FindAnyObjectByType<PrototypeVehicleController>();
             var route = Object.FindAnyObjectByType<PrototypeRouteProgress>();
             var metrics = Object.FindAnyObjectByType<PrototypeRunMetrics>();
-            var interactable = Object.FindAnyObjectByType<PrototypeInteractable>();
+            var interactable = GameObject.Find("Workshop shutter interactable")?.GetComponent<PrototypeInteractable>();
             var checkpoints = Object.FindObjectsByType<PrototypeRouteCheckpoint>(FindObjectsSortMode.None)
                 .OrderBy(checkpoint => checkpoint.CheckpointIndex)
                 .ToArray();
@@ -185,6 +185,97 @@ namespace ValleDePlata.Tests
             Assert.That(metrics.HasRouteCoverage, Is.True);
             Assert.That(metrics.CoverageStatus, Is.EqualTo("Coverage complete"));
             Assert.That(metrics.BuildSummary(), Does.Contain("ManualFeelGate: Required"));
+        }
+
+        [UnityTest]
+        public IEnumerator PublicViolenceMicrotestChangesWorldAndVisibleMarkers()
+        {
+            SceneManager.LoadScene("Phase1_FeelPrototype");
+            yield return null;
+
+            var world = Object.FindAnyObjectByType<PrototypeWorldState>();
+            var violenceTarget = GameObject.Find("Public violence test target")?.GetComponent<PrototypeInteractable>();
+            var reactionMarkers = Object.FindObjectsByType<PrototypeWorldReactionMarker>(FindObjectsSortMode.None);
+
+            Assert.That(world, Is.Not.Null);
+            Assert.That(violenceTarget, Is.Not.Null);
+            Assert.That(reactionMarkers.Length, Is.GreaterThanOrEqualTo(3));
+
+            violenceTarget.Interact();
+            yield return null;
+
+            Assert.That(world.LastEvent, Is.EqualTo(PrototypeWorldEvent.PublicViolenceCommitted));
+            Assert.That(world.Fear, Is.EqualTo(SocialLevel.High));
+            Assert.That(world.PeopleLove, Is.EqualTo(SocialLevel.Low));
+            Assert.That(world.StatePressure, Is.EqualTo(PressureLevel.Medium));
+            Assert.That(world.RuleStyleDecision, Is.EqualTo(RuleStyle.ShowOfForce));
+            Assert.That(PrototypeDebugState.World, Does.Contain("StatePressure: Medium"));
+            Assert.That(PrototypeDebugState.WorldReaction, Does.Contain("after"));
+            Assert.That(reactionMarkers.Count(marker => marker.Reacted), Is.GreaterThanOrEqualTo(3));
+        }
+
+        [UnityTest]
+        public IEnumerator BribeMicrotestReducesPressureAndLeavesVisibleLeverage()
+        {
+            SceneManager.LoadScene("Phase1_FeelPrototype");
+            yield return null;
+
+            var world = Object.FindAnyObjectByType<PrototypeWorldState>();
+            var bribeOfficer = GameObject.Find("Rios bribe test officer")?.GetComponent<PrototypeInteractable>();
+            var bribeMarkers = Object.FindObjectsByType<PrototypeWorldReactionMarker>(FindObjectsSortMode.None)
+                .Where(marker => marker.ReactionMessage.Contains("bribe") || marker.ReactionMessage.Contains("Rios") || marker.ReactionMessage.Contains("Risk cargo"))
+                .ToArray();
+
+            Assert.That(world, Is.Not.Null);
+            Assert.That(bribeOfficer, Is.Not.Null);
+            Assert.That(bribeMarkers.Length, Is.EqualTo(3));
+
+            world.ApplyEvent(PrototypeWorldEvent.PublicViolenceCommitted);
+            bribeOfficer.Interact();
+            yield return null;
+
+            Assert.That(world.LastEvent, Is.EqualTo(PrototypeWorldEvent.BribeAccepted));
+            Assert.That(world.StatePressure, Is.EqualTo(PressureLevel.Low));
+            Assert.That(world.DirtyCash, Is.EqualTo(DirtyCashState.Hidden));
+            Assert.That(world.RuleStyleDecision, Is.EqualTo(RuleStyle.Bribe));
+            Assert.That(PrototypeDebugState.World, Does.Contain("DirtyCash: Hidden"));
+            Assert.That(bribeMarkers.Count(marker => marker.Reacted), Is.EqualTo(3));
+        }
+
+        [UnityTest]
+        public IEnumerator MateoMicrotestBranchesTrustIntoDifferentVisibleWarnings()
+        {
+            SceneManager.LoadScene("Phase1_FeelPrototype");
+            yield return null;
+
+            var world = Object.FindAnyObjectByType<PrototypeWorldState>();
+            var protectedContact = GameObject.Find("Mateo protected test contact")?.GetComponent<PrototypeInteractable>();
+            var earlyWarning = GameObject.Find("Mateo early warning marker")?.GetComponent<PrototypeWorldReactionMarker>();
+
+            Assert.That(world, Is.Not.Null);
+            Assert.That(protectedContact, Is.Not.Null);
+            Assert.That(earlyWarning, Is.Not.Null);
+
+            protectedContact.Interact();
+            yield return null;
+
+            Assert.That(world.LastEvent, Is.EqualTo(PrototypeWorldEvent.MateoProtected));
+            Assert.That(world.LieutenantTrust, Is.EqualTo(LieutenantTrust.Trusted));
+            Assert.That(earlyWarning.Reacted, Is.True);
+
+            world.ResetState();
+            var humiliatedContact = GameObject.Find("Mateo humiliated test contact")?.GetComponent<PrototypeInteractable>();
+            var lateWarning = GameObject.Find("Mateo late warning marker")?.GetComponent<PrototypeWorldReactionMarker>();
+
+            Assert.That(humiliatedContact, Is.Not.Null);
+            Assert.That(lateWarning, Is.Not.Null);
+
+            humiliatedContact.Interact();
+            yield return null;
+
+            Assert.That(world.LastEvent, Is.EqualTo(PrototypeWorldEvent.MateoHumiliated));
+            Assert.That(world.LieutenantTrust, Is.EqualTo(LieutenantTrust.Humiliated));
+            Assert.That(lateWarning.Reacted, Is.True);
         }
     }
 }

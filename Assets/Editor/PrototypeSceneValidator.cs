@@ -22,8 +22,21 @@ namespace ValleDePlata.Editor
             RequireComponent<PrototypeCameraRig>("Prototype Camera Rig");
             RequireComponent<PrototypeDebugHud>("Prototype Debug HUD");
             RequireComponent<PrototypeRunMetrics>("Phase 1 Run Metrics");
+            RequireComponent<PrototypeWorldState>("Prototype World State");
             RequireComponent<PrototypePressureZone>("Pressure patrol marker");
             RequireComponent<PrototypeInteractable>("Workshop shutter interactable");
+            RequireComponent<PrototypeInteractable>("Public violence test target");
+            RequireComponent<PrototypeWorldReactionMarker>("Civilian panic marker");
+            RequireComponent<PrototypeWorldReactionMarker>("Shop shutter closes marker");
+            RequireComponent<PrototypeWorldReactionMarker>("Police pressure moves closer marker");
+            RequireComponent<PrototypeInteractable>("Rios bribe test officer");
+            RequireComponent<PrototypeWorldReactionMarker>("Bribe roadblock opens marker");
+            RequireComponent<PrototypeWorldReactionMarker>("Rios leverage marker");
+            RequireComponent<PrototypeWorldReactionMarker>("Risk cargo hidden marker");
+            RequireComponent<PrototypeInteractable>("Mateo protected test contact");
+            RequireComponent<PrototypeInteractable>("Mateo humiliated test contact");
+            RequireComponent<PrototypeWorldReactionMarker>("Mateo early warning marker");
+            RequireComponent<PrototypeWorldReactionMarker>("Mateo late warning marker");
             RequireComponent<PrototypeRouteProgress>("Phase 1 Route Progress");
 
             RequireObject("Narrow asphalt route");

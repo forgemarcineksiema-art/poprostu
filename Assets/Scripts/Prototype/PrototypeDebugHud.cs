@@ -23,7 +23,7 @@ namespace ValleDePlata.Prototype
             }
 
             var text =
-                "Phase 1 Feel Prototype\n" +
+                "Phase 2 Action Pressure Prototype\n" +
                 "WASD / Left Stick: move or drive\n" +
                 "Mouse / Right Stick: camera\n" +
                 "Shift: sprint | Space/LT: handbrake\n" +
@@ -35,10 +35,12 @@ namespace ValleDePlata.Prototype
                 $"Pressure: {PrototypeDebugState.Pressure}\n" +
                 $"Route: {PrototypeDebugState.Route}\n" +
                 $"Checkpoint: {PrototypeDebugState.LastCheckpoint}\n" +
+                $"{PrototypeDebugState.World}\n" +
+                $"{PrototypeDebugState.WorldReaction}\n" +
                 $"Metrics: {PrototypeDebugState.Metrics}";
 
-            GUI.Box(new Rect(16, 16, 680, 315), GUIContent.none);
-            GUI.Label(new Rect(20, 20, 670, 310), text, style);
+            GUI.Box(new Rect(16, 16, 760, 430), GUIContent.none);
+            GUI.Label(new Rect(20, 20, 750, 425), text, style);
         }
     }
 }
