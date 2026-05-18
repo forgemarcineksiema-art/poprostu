@@ -26,6 +26,7 @@ namespace ValleDePlata.Editor
             RequireComponent<PrototypeVehicleController>("Prototype Sedan");
             RequireComponent<PrototypeCameraRig>("Prototype Camera Rig");
             RequireComponent<PrototypeDebugHud>("Prototype Debug HUD");
+            RequireComponent<PrototypePlayerHud>("Prototype Player HUD");
             RequireComponent<PrototypeRunMetrics>("Phase 1 Run Metrics");
             RequireComponent<PrototypeWorldState>("Prototype World State");
             RequireComponent<PrototypeMissionSpine>("Pierwszy Front Mission Spine");
@@ -33,6 +34,7 @@ namespace ValleDePlata.Editor
             RequireComponent<PrototypePressureZone>("Pressure patrol marker");
             RequireComponent<PrototypePressureChoiceController>("Pressure patrol marker");
             RequireComponent<PrototypePressureScenePlayback>("Pressure patrol marker");
+            RequireComponent<Light>("Warm presentation fill light");
             RequireComponent<PrototypeInteractable>("Workshop shutter interactable");
             RequireComponent<PrototypeInteractable>("Public violence test target");
             RequireComponent<PrototypeWorldReactionMarker>("Civilian panic marker");
@@ -75,6 +77,11 @@ namespace ValleDePlata.Editor
             RequireNonBlockingDressing("El Respiro workshop sign");
             RequireNonBlockingDressing("Rooftop water tank");
             RequireNonBlockingDressing("Barrio crate stack");
+            RequireNonBlockingDressing("Left sunlit plaster facade");
+            RequireNonBlockingDressing("Right faded teal facade");
+            RequireNonBlockingDressing("Market awning strip");
+            RequireNonBlockingDressing("Workshop plaster return");
+            RequireNonBlockingDressing("Pressure road dust band");
             RequireRouteCheckpoint(0, "Start on foot");
             RequireRouteCheckpoint(1, "Enter vehicle lane");
             RequireRouteCheckpoint(2, "Patrol pressure turn");

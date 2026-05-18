@@ -1,4 +1,5 @@
 using System.IO;
+using System.Reflection;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -90,6 +91,52 @@ namespace ValleDePlata.Tests
             Assert.That(roadblockLeft.transform.position.z, Is.InRange(23f, 26f));
             Assert.That(roadblockRight.transform.position.z, Is.InRange(23f, 26f));
             Assert.That(workshopSign.transform.position.z, Is.GreaterThan(44f));
+        }
+
+        [Test]
+        public void Phase1SceneContainsPlayerFacingPresentationLayer()
+        {
+            EditorSceneManager.OpenScene(ScenePath);
+
+            var hud = RequireObject("Prototype Player HUD");
+            Assert.That(HasComponentNamed(hud, "PrototypePlayerHud"), Is.True, "Scene needs a player-facing HUD separate from the debug dump.");
+
+            var debugHud = RequireComponent<PrototypeDebugHud>("Prototype Debug HUD");
+            var debugVisible = new SerializedObject(debugHud).FindProperty("visible");
+            Assert.That(debugVisible, Is.Not.Null);
+            Assert.That(debugVisible.boolValue, Is.False, "Debug HUD should not be the default presentation layer for the playable slice.");
+
+            RequireNonBlockingDressing("Left sunlit plaster facade");
+            RequireNonBlockingDressing("Right faded teal facade");
+            RequireNonBlockingDressing("Market awning strip");
+            RequireNonBlockingDressing("Workshop plaster return");
+            RequireNonBlockingDressing("Pressure road dust band");
+
+            var fillLight = RequireComponent<Light>("Warm presentation fill light");
+            Assert.That(fillLight.intensity, Is.GreaterThanOrEqualTo(0.45f));
+            Assert.That(fillLight.shadows, Is.EqualTo(LightShadows.None));
+        }
+
+        [Test]
+        public void PlayerHudFormatsObjectiveAndPromptWithoutDebugPrefixes()
+        {
+            var hudType = System.Type.GetType("ValleDePlata.Prototype.PrototypePlayerHud, ValleDePlata.Prototype");
+            Assert.That(hudType, Is.Not.Null, "PrototypePlayerHud type is missing.");
+
+            var objectiveMethod = hudType.GetMethod("BuildObjectiveLine", BindingFlags.Public | BindingFlags.Static);
+            var promptMethod = hudType.GetMethod("BuildPromptLine", BindingFlags.Public | BindingFlags.Static);
+            Assert.That(objectiveMethod, Is.Not.Null);
+            Assert.That(promptMethod, Is.Not.Null);
+
+            var objective = (string)objectiveMethod.Invoke(null, new object[] { "Objective: collect dirty cash at El Respiro" });
+            var changed = (string)objectiveMethod.Invoke(null, new object[] { "Objective changed: escape the patrol pressure" });
+            var prompt = (string)promptMethod.Invoke(null, new object[] { "Pay Rios bribe" });
+            var nonePrompt = (string)promptMethod.Invoke(null, new object[] { "None" });
+
+            Assert.That(objective, Is.EqualTo("Collect dirty cash at El Respiro"));
+            Assert.That(changed, Is.EqualTo("Escape the patrol pressure"));
+            Assert.That(prompt, Is.EqualTo("E / A  Pay Rios bribe"));
+            Assert.That(nonePrompt, Is.EqualTo(string.Empty));
         }
 
         [Test]
@@ -800,9 +847,24 @@ namespace ValleDePlata.Tests
             Object.DestroyImmediate(worldObject);
         }
 
-        private static void RequireObject(string objectName)
+        private static GameObject RequireObject(string objectName)
         {
-            Assert.That(GameObject.Find(objectName), Is.Not.Null, $"Missing required object: {objectName}");
+            var target = GameObject.Find(objectName);
+            Assert.That(target, Is.Not.Null, $"Missing required object: {objectName}");
+            return target;
+        }
+
+        private static bool HasComponentNamed(GameObject target, string componentTypeName)
+        {
+            foreach (var component in target.GetComponents<MonoBehaviour>())
+            {
+                if (component != null && component.GetType().Name == componentTypeName)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static GameObject RequireNonBlockingDressing(string objectName)

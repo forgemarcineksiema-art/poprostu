@@ -21,9 +21,9 @@ namespace ValleDePlata.Editor
             EnsureFolder(SettingsFolder);
             var sliceDefinition = EnsureSliceDefinition();
 
-            var concrete = CreateMaterial("Prototype_Concrete", new Color(0.46f, 0.45f, 0.4f));
-            var asphalt = CreateMaterial("Prototype_Asphalt", new Color(0.13f, 0.13f, 0.12f));
-            var sunBleachedWall = CreateMaterial("Prototype_SunBleachedWall", new Color(0.72f, 0.64f, 0.49f));
+            var concrete = CreateMaterial("Prototype_Concrete", new Color(0.56f, 0.54f, 0.48f));
+            var asphalt = CreateMaterial("Prototype_Asphalt", new Color(0.18f, 0.18f, 0.17f));
+            var sunBleachedWall = CreateMaterial("Prototype_SunBleachedWall", new Color(0.78f, 0.68f, 0.5f));
             var rust = CreateMaterial("Prototype_Rust", new Color(0.55f, 0.22f, 0.13f));
             var patrolBlue = CreateMaterial("Prototype_PatrolBlue", new Color(0.08f, 0.16f, 0.28f));
             var routeGreen = CreateMaterial("Prototype_RouteGreen", new Color(0.18f, 0.42f, 0.32f));
@@ -32,18 +32,20 @@ namespace ValleDePlata.Editor
             SceneManager.SetActiveScene(scene);
 
             RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Trilight;
-            RenderSettings.ambientSkyColor = new Color(0.75f, 0.68f, 0.55f);
-            RenderSettings.ambientEquatorColor = new Color(0.46f, 0.4f, 0.32f);
-            RenderSettings.ambientGroundColor = new Color(0.18f, 0.16f, 0.14f);
+            RenderSettings.ambientSkyColor = new Color(0.84f, 0.76f, 0.62f);
+            RenderSettings.ambientEquatorColor = new Color(0.58f, 0.48f, 0.36f);
+            RenderSettings.ambientGroundColor = new Color(0.25f, 0.21f, 0.17f);
 
             CreateLight();
+            CreatePresentationFillLight();
             CreateEnvironment(concrete, asphalt, sunBleachedWall, rust, patrolBlue, routeGreen);
             var player = CreatePlayer();
             CreateVehicle();
             CreateRoute(routeGreen, sliceDefinition);
             CreateWorldState();
             var mission = CreateMissionSpine();
-            CreateObjectiveMarker(mission);
+            var objectiveMarker = CreateObjectiveMarker(mission);
+            CreatePlayerHud(objectiveMarker);
             CreateCamera(player);
             CreateRunMetrics();
             CreateDebugHud();
@@ -59,8 +61,20 @@ namespace ValleDePlata.Editor
             var lightObject = new GameObject("Hot afternoon sun");
             var light = lightObject.AddComponent<Light>();
             light.type = LightType.Directional;
-            light.intensity = 1.35f;
+            light.intensity = 1.58f;
+            light.shadows = LightShadows.Soft;
             lightObject.transform.rotation = Quaternion.Euler(48f, -35f, 0f);
+        }
+
+        private static void CreatePresentationFillLight()
+        {
+            var lightObject = new GameObject("Warm presentation fill light");
+            var light = lightObject.AddComponent<Light>();
+            light.type = LightType.Directional;
+            light.intensity = 0.52f;
+            light.color = new Color(1f, 0.84f, 0.62f);
+            light.shadows = LightShadows.None;
+            lightObject.transform.rotation = Quaternion.Euler(32f, 145f, 0f);
         }
 
         private static void CreateEnvironment(Material concrete, Material asphalt, Material wall, Material rust, Material patrolBlue, Material routeGreen)
@@ -158,6 +172,22 @@ namespace ValleDePlata.Editor
                 new Vector3(0f, -90f, 0f),
                 0.12f,
                 Color.white);
+
+            CreatePresentationFacades();
+        }
+
+        private static void CreatePresentationFacades()
+        {
+            var plasterWarm = CreateMaterial("Prototype_FacadeWarmPlaster", new Color(0.83f, 0.63f, 0.38f));
+            var tealPaint = CreateMaterial("Prototype_FacadeFadedTeal", new Color(0.23f, 0.52f, 0.55f));
+            var awningRed = CreateMaterial("Prototype_FacadeAwningRed", new Color(0.72f, 0.19f, 0.13f));
+            var dust = CreateMaterial("Prototype_RoadDust", new Color(0.68f, 0.54f, 0.35f));
+
+            CreateDressingCube("Left sunlit plaster facade", new Vector3(-5.31f, 1.74f, 2.5f), new Vector3(0.12f, 1.28f, 18f), plasterWarm);
+            CreateDressingCube("Right faded teal facade", new Vector3(5.31f, 1.62f, 18f), new Vector3(0.12f, 1.15f, 18f), tealPaint);
+            CreateDressingCube("Market awning strip", new Vector3(4.38f, 2.38f, 13.5f), new Vector3(1.25f, 0.16f, 4.6f), awningRed);
+            CreateDressingCube("Workshop plaster return", new Vector3(4.18f, 1.82f, 47.3f), new Vector3(0.16f, 1.15f, 5.8f), plasterWarm);
+            CreateDressingCube("Pressure road dust band", new Vector3(0f, 0.085f, 31f), new Vector3(6.1f, 0.02f, 13.5f), dust);
         }
 
         private static void CreateFoundationProofGeometry(Material wall, Material rust)
@@ -454,7 +484,8 @@ namespace ValleDePlata.Editor
         private static void CreateDebugHud()
         {
             var debug = new GameObject("Prototype Debug HUD");
-            debug.AddComponent<PrototypeDebugHud>();
+            var debugHud = debug.AddComponent<PrototypeDebugHud>();
+            SetBool(debugHud, "visible", false);
         }
 
         private static void CreateWorldState()
@@ -469,11 +500,19 @@ namespace ValleDePlata.Editor
             return mission.AddComponent<PrototypeMissionSpine>();
         }
 
-        private static void CreateObjectiveMarker(PrototypeMissionSpine mission)
+        private static PrototypeObjectiveMarker CreateObjectiveMarker(PrototypeMissionSpine mission)
         {
             var marker = new GameObject("Prototype Objective Marker");
             var objectiveMarker = marker.AddComponent<PrototypeObjectiveMarker>();
             SetObjectReference(objectiveMarker, "missionSpine", mission);
+            return objectiveMarker;
+        }
+
+        private static void CreatePlayerHud(PrototypeObjectiveMarker objectiveMarker)
+        {
+            var hud = new GameObject("Prototype Player HUD");
+            var playerHud = hud.AddComponent<PrototypePlayerHud>();
+            SetObjectReference(playerHud, "objectiveMarker", objectiveMarker);
         }
 
         private static void CreateRunMetrics()
@@ -553,6 +592,13 @@ namespace ValleDePlata.Editor
         {
             var serializedObject = new SerializedObject(target);
             serializedObject.FindProperty(propertyName).intValue = value;
+            serializedObject.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        private static void SetBool(Object target, string propertyName, bool value)
+        {
+            var serializedObject = new SerializedObject(target);
+            serializedObject.FindProperty(propertyName).boolValue = value;
             serializedObject.ApplyModifiedPropertiesWithoutUndo();
         }
 
