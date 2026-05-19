@@ -322,6 +322,33 @@ namespace ValleDePlata.Tests
         }
 
         [UnityTest]
+        public IEnumerator CharacterPresentationFeedsPabloAnimatorParameters()
+        {
+            SceneManager.LoadScene("Phase1_FeelPrototype");
+            yield return null;
+
+            var player = Object.FindAnyObjectByType<PrototypePlayerController>();
+            var avatarView = Object.FindAnyObjectByType<PrototypeAvatarView>();
+            Assert.That(player, Is.Not.Null);
+            Assert.That(avatarView, Is.Not.Null);
+
+            var animator = avatarView.GetComponentInChildren<Animator>(true);
+            Assert.That(animator, Is.Not.Null);
+            Assert.That(animator.runtimeAnimatorController, Is.Not.Null);
+
+            player.ApplyMovementForTests(Vector2.up, true, 0.25f);
+
+            Assert.That(animator.GetFloat("Speed"), Is.GreaterThan(0.1f));
+            Assert.That(animator.GetBool("IsSprinting"), Is.True);
+            Assert.That(animator.GetBool("Grounded"), Is.True);
+
+            player.ApplyMovementForTests(Vector2.zero, false, 0.5f);
+
+            Assert.That(animator.GetBool("IsSprinting"), Is.False);
+            Assert.That(animator.GetFloat("Speed"), Is.GreaterThanOrEqualTo(0f));
+        }
+
+        [UnityTest]
         public IEnumerator CameraCollisionIgnoresPrototypeMarkersButHitsWorld()
         {
             var rigObject = new GameObject("Camera Collision Rig Test");

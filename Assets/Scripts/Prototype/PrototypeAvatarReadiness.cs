@@ -14,6 +14,9 @@ namespace ValleDePlata.Prototype
             int gameplayColliderCount,
             int rigidbodyCount,
             bool hasAnimator,
+            bool hasAnimatorController,
+            int animationClipCount,
+            bool usesPlaceholderAnimationOnly,
             bool supportsRuntimeCustomization,
             float estimatedHeightMeters)
         {
@@ -26,6 +29,9 @@ namespace ValleDePlata.Prototype
             GameplayColliderCount = gameplayColliderCount;
             RigidbodyCount = rigidbodyCount;
             HasAnimator = hasAnimator;
+            HasAnimatorController = hasAnimatorController;
+            AnimationClipCount = animationClipCount;
+            UsesPlaceholderAnimationOnly = usesPlaceholderAnimationOnly;
             SupportsRuntimeCustomization = supportsRuntimeCustomization;
             EstimatedHeightMeters = estimatedHeightMeters;
         }
@@ -39,6 +45,9 @@ namespace ValleDePlata.Prototype
         public int GameplayColliderCount { get; }
         public int RigidbodyCount { get; }
         public bool HasAnimator { get; }
+        public bool HasAnimatorController { get; }
+        public int AnimationClipCount { get; }
+        public bool UsesPlaceholderAnimationOnly { get; }
         public bool SupportsRuntimeCustomization { get; }
         public float EstimatedHeightMeters { get; }
         public bool IsPlayablePlaceholder => RuntimeReadiness == PrototypeAvatarRuntimeReadiness.StaticPlayablePlaceholder
@@ -62,7 +71,10 @@ namespace ValleDePlata.Prototype
                 PrototypeAvatarRuntimeReadiness.SkinnedRigCandidate => "skinned rig candidate",
                 _ => RuntimeReadiness.ToString()
             };
-            return $"{PrefabName}: {readiness}, renderers={RendererCount}, skinned={SkinnedMeshRendererCount}, skeletonTransforms={SkeletonTransformCount}, colliders={GameplayColliderCount}, rigidbodies={RigidbodyCount}, height={EstimatedHeightMeters:0.00}m.";
+            var animation = HasAnimatorController
+                ? $"animatorClips={AnimationClipCount}, placeholderOnly={UsesPlaceholderAnimationOnly}"
+                : "animatorClips=0";
+            return $"{PrefabName}: {readiness}, renderers={RendererCount}, skinned={SkinnedMeshRendererCount}, skeletonTransforms={SkeletonTransformCount}, colliders={GameplayColliderCount}, rigidbodies={RigidbodyCount}, {animation}, height={EstimatedHeightMeters:0.00}m.";
         }
     }
 
@@ -83,6 +95,9 @@ namespace ValleDePlata.Prototype
                     0,
                     false,
                     false,
+                    0,
+                    false,
+                    false,
                     0f);
             }
 
@@ -95,7 +110,9 @@ namespace ValleDePlata.Prototype
             var colliders = root != null ? root.GetComponentsInChildren<Collider>(true) : System.Array.Empty<Collider>();
             var rigidbodies = root != null ? root.GetComponentsInChildren<Rigidbody>(true) : System.Array.Empty<Rigidbody>();
             var transforms = root != null ? root.GetComponentsInChildren<Transform>(true) : System.Array.Empty<Transform>();
-            var hasAnimator = root != null && root.GetComponentInChildren<Animator>(true) != null;
+            var animator = root != null ? root.GetComponentInChildren<Animator>(true) : null;
+            var controller = animator != null ? animator.runtimeAnimatorController : null;
+            var clips = controller != null ? controller.animationClips : System.Array.Empty<AnimationClip>();
             var skinnedMeshRendererCount = 0;
             foreach (var renderer in renderers)
             {
@@ -123,9 +140,30 @@ namespace ValleDePlata.Prototype
                 transforms.Length,
                 gameplayColliderCount,
                 rigidbodies.Length,
-                hasAnimator,
+                animator != null,
+                controller != null,
+                clips.Length,
+                UsesOnlyPlaceholderClips(clips),
                 definition != null && definition.SupportsRuntimeCustomization,
                 EstimateHeightMeters(renderers));
+        }
+
+        private static bool UsesOnlyPlaceholderClips(AnimationClip[] clips)
+        {
+            if (clips == null || clips.Length == 0)
+            {
+                return false;
+            }
+
+            foreach (var clip in clips)
+            {
+                if (clip == null || !clip.name.StartsWith("Placeholder_", System.StringComparison.Ordinal))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         public static float EstimateHeightMeters(Renderer[] renderers)

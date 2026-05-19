@@ -3,6 +3,7 @@ using System.Reflection;
 using System.Linq;
 using NUnit.Framework;
 using UnityEditor;
+using UnityEditor.Animations;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using ValleDePlata.Prototype;
@@ -16,6 +17,7 @@ namespace ValleDePlata.Tests
         private const string MaleCrimeDramaPrefabPath = "Assets/Models/Characters/MaleCrimeDrama.prefab";
         private const string PabloValeraV2PrefabPath = "Assets/Models/Characters/PabloValera_V2/PabloValera_V2.prefab";
         private const string PabloValeraV2GlbPath = "Assets/Models/Characters/PabloValera_V2/PabloValera_V2_Assets/selected.glb";
+        private const string PabloValeraV2AnimatorPath = "Assets/Models/Characters/PabloValera_V2/Animation/PabloValera_V2_Animator.controller";
 
         private static readonly string[] ValleDePlataStreetKitStructuralPrefabs =
         {
@@ -221,16 +223,19 @@ namespace ValleDePlata.Tests
             var serialized = new SerializedObject(definition);
             var runtimeReadiness = serialized.FindProperty("runtimeReadiness");
             var rigReadiness = serialized.FindProperty("rigReadiness");
+            var animationReadiness = serialized.FindProperty("animationReadiness");
             var supportsRuntimeCustomization = serialized.FindProperty("supportsRuntimeCustomization");
             var plannedSlots = serialized.FindProperty("plannedCustomizationSlots");
 
             Assert.That(runtimeReadiness, Is.Not.Null, "Avatar definition must say whether a generated mesh is playable, rigged, or custom-ready.");
             Assert.That(rigReadiness, Is.Not.Null, "Avatar definition must explicitly track rig readiness before animation work begins.");
+            Assert.That(animationReadiness, Is.Not.Null, "Avatar definition must distinguish placeholder Animator setup from real locomotion animation.");
             Assert.That(supportsRuntimeCustomization, Is.Not.Null, "Avatar definition must not imply future customization until slots are real.");
             Assert.That(plannedSlots, Is.Not.Null, "Avatar definition should name planned slots even while the current mesh is full-body.");
 
             Assert.That(runtimeReadiness.enumValueIndex, Is.EqualTo(1), "Pablo V2 should be tracked as a skinned rig candidate, not a final animation-ready character.");
             Assert.That(rigReadiness.enumValueIndex, Is.EqualTo(1), "The current GLB has a skin/skeleton, but Humanoid import still needs validation before animation work.");
+            Assert.That(animationReadiness.enumValueIndex, Is.EqualTo(1), "Unity AI only created a Generic placeholder Animator, not real locomotion animation.");
             Assert.That(supportsRuntimeCustomization.boolValue, Is.False);
             Assert.That(plannedSlots.arraySize, Is.GreaterThanOrEqualTo(6), "We need the customization direction recorded before replacing the placeholder.");
 
@@ -240,6 +245,37 @@ namespace ValleDePlata.Tests
             Assert.That(summary, Does.Contain("skinned rig candidate"));
             Assert.That(summary, Does.Contain("humanoid validation"));
             Assert.That(summary, Does.Contain("customization slots"));
+        }
+
+        [Test]
+        public void PabloValeraV2AnimatorControllerHasExpectedPlaceholderContract()
+        {
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PabloValeraV2PrefabPath);
+            var controller = AssetDatabase.LoadAssetAtPath<AnimatorController>(PabloValeraV2AnimatorPath);
+            Assert.That(prefab, Is.Not.Null);
+            Assert.That(controller, Is.Not.Null, "Unity AI should prepare an Animator Controller asset for Pablo V2.");
+
+            var animator = prefab.GetComponentInChildren<Animator>(true);
+            Assert.That(animator, Is.Not.Null, "Pablo V2 prefab should carry an Animator component for future runtime locomotion.");
+            Assert.That(animator.runtimeAnimatorController, Is.EqualTo(controller));
+            Assert.That(animator.avatar, Is.Null, "The GLB importer kept this as Generic; do not pretend Humanoid retargeting is ready.");
+            Assert.That(animator.applyRootMotion, Is.False);
+
+            AssertAnimatorParameter(controller, "Speed", AnimatorControllerParameterType.Float);
+            AssertAnimatorParameter(controller, "IsSprinting", AnimatorControllerParameterType.Bool);
+            AssertAnimatorParameter(controller, "Grounded", AnimatorControllerParameterType.Bool);
+
+            var expectedStates = new[] { "Idle", "Walk", "Run", "Sprint" };
+            var states = controller.layers[0].stateMachine.states.Select(state => state.state).ToArray();
+            CollectionAssert.AreEquivalent(expectedStates, states.Select(state => state.name).ToArray());
+            foreach (var state in states)
+            {
+                var clip = state.motion as AnimationClip;
+                Assert.That(clip, Is.Not.Null, $"{state.name} should use a safe placeholder clip until real locomotion exists.");
+                Assert.That(clip!.name, Is.EqualTo($"Placeholder_{state.name}"));
+                Assert.That(AnimationUtility.GetCurveBindings(clip).Length, Is.EqualTo(0), $"{clip.name} must not deform the mesh.");
+                Assert.That(AnimationUtility.GetObjectReferenceCurveBindings(clip).Length, Is.EqualTo(0), $"{clip.name} must not swap assets.");
+            }
         }
 
         [Test]
@@ -262,6 +298,15 @@ namespace ValleDePlata.Tests
             var skeletonCount = report.GetType().GetProperty("SkeletonTransformCount");
             Assert.That(skeletonCount, Is.Not.Null, "Readiness report should expose skeleton transform count for AI-rigged candidates.");
             Assert.That((int)skeletonCount!.GetValue(report), Is.GreaterThanOrEqualTo(35));
+            var hasAnimatorController = report.GetType().GetProperty("HasAnimatorController");
+            Assert.That(hasAnimatorController, Is.Not.Null, "Readiness report should know whether the prefab has an Animator Controller.");
+            Assert.That((bool)hasAnimatorController!.GetValue(report), Is.True);
+            var clipCount = report.GetType().GetProperty("AnimationClipCount");
+            Assert.That(clipCount, Is.Not.Null, "Readiness report should count placeholder clips separately from real animation readiness.");
+            Assert.That((int)clipCount!.GetValue(report), Is.EqualTo(4));
+            var placeholderOnly = report.GetType().GetProperty("UsesPlaceholderAnimationOnly");
+            Assert.That(placeholderOnly, Is.Not.Null, "Readiness report should flag Unity AI placeholder clips.");
+            Assert.That((bool)placeholderOnly!.GetValue(report), Is.True);
             Assert.That((int)report.GetType().GetProperty("GameplayColliderCount")!.GetValue(report), Is.EqualTo(0));
             var isSkinnedCandidate = report.GetType().GetProperty("IsSkinnedRigCandidate");
             Assert.That(isSkinnedCandidate, Is.Not.Null, "Readiness report should distinguish skinned candidates from static placeholders.");
@@ -1233,6 +1278,13 @@ namespace ValleDePlata.Tests
             }
 
             return false;
+        }
+
+        private static void AssertAnimatorParameter(AnimatorController controller, string name, AnimatorControllerParameterType type)
+        {
+            var parameter = controller.parameters.FirstOrDefault(parameter => parameter.name == name);
+            Assert.That(parameter, Is.Not.Null, $"Animator parameter {name} is missing.");
+            Assert.That(parameter.type, Is.EqualTo(type), $"Animator parameter {name} has the wrong type.");
         }
 
         private static GameObject RequireNonBlockingDressing(string objectName)

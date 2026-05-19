@@ -4,14 +4,24 @@ namespace ValleDePlata.Prototype
 {
     public sealed class PrototypeAvatarView : MonoBehaviour
     {
+        private static readonly int SpeedParameter = Animator.StringToHash("Speed");
+        private const string IsSprintingParameter = "IsSprinting";
+        private const string GroundedParameter = "Grounded";
+
         [SerializeField] private PrototypeAvatarDefinition avatarDefinition;
         [SerializeField] private Transform fullBodyRoot;
+
+        private Animator animator;
+        private bool hasSpeedParameter;
+        private bool hasIsSprintingParameter;
+        private bool hasGroundedParameter;
 
         public PrototypeAvatarDefinition AvatarDefinition => avatarDefinition;
         public Transform FullBodyRoot => fullBodyRoot;
 
         private void Awake()
         {
+            CacheAnimator();
             ApplyDefinition();
             EnsureNonGameplayVisual();
         }
@@ -20,6 +30,7 @@ namespace ValleDePlata.Prototype
         {
             avatarDefinition = definition;
             fullBodyRoot = fullBody;
+            CacheAnimator();
             ApplyDefinition();
             EnsureNonGameplayVisual();
         }
@@ -38,6 +49,30 @@ namespace ValleDePlata.Prototype
         public void SetVisible(bool visible)
         {
             gameObject.SetActive(visible);
+        }
+
+        public void ApplyAnimatorLocomotion(float speed, bool sprinting, bool grounded)
+        {
+            CacheAnimator();
+            if (animator == null || animator.runtimeAnimatorController == null)
+            {
+                return;
+            }
+
+            if (hasSpeedParameter)
+            {
+                animator.SetFloat(SpeedParameter, Mathf.Max(0f, speed));
+            }
+
+            if (hasIsSprintingParameter)
+            {
+                animator.SetBool(IsSprintingParameter, sprinting);
+            }
+
+            if (hasGroundedParameter)
+            {
+                animator.SetBool(GroundedParameter, grounded);
+            }
         }
 
         public float EstimateVisualHeightMeters()
@@ -87,6 +122,13 @@ namespace ValleDePlata.Prototype
             if (report.RigidbodyCount > 0)
             {
                 issue = "Avatar visual contains rigidbodies and should stay non-gameplay.";
+                return false;
+            }
+
+            if (avatarDefinition.AnimationReadiness == PrototypeAvatarAnimationReadiness.GenericPlaceholderController
+                && !report.HasAnimatorController)
+            {
+                issue = "Avatar definition expects a placeholder Animator Controller, but the visual has none.";
                 return false;
             }
 
@@ -143,6 +185,35 @@ namespace ValleDePlata.Prototype
             }
 
             return true;
+        }
+
+        private void CacheAnimator()
+        {
+            animator = fullBodyRoot != null
+                ? fullBodyRoot.GetComponentInChildren<Animator>(true)
+                : GetComponentInChildren<Animator>(true);
+
+            hasSpeedParameter = HasAnimatorParameter("Speed", AnimatorControllerParameterType.Float);
+            hasIsSprintingParameter = HasAnimatorParameter("IsSprinting", AnimatorControllerParameterType.Bool);
+            hasGroundedParameter = HasAnimatorParameter("Grounded", AnimatorControllerParameterType.Bool);
+        }
+
+        private bool HasAnimatorParameter(string parameterName, AnimatorControllerParameterType parameterType)
+        {
+            if (animator == null || animator.runtimeAnimatorController == null)
+            {
+                return false;
+            }
+
+            foreach (var parameter in animator.parameters)
+            {
+                if (parameter.name == parameterName && parameter.type == parameterType)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }
