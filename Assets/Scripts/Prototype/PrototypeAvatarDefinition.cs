@@ -44,6 +44,14 @@ namespace ValleDePlata.Prototype
         HumanoidRetargetReady
     }
 
+    public enum PrototypeAvatarRigDecision
+    {
+        Undecided,
+        KeepVisualRequestHumanoidSource,
+        ReadyForHumanoidLocomotion,
+        RejectPlayableAvatar
+    }
+
     [CreateAssetMenu(fileName = "PrototypeAvatarDefinition", menuName = "Valle de Plata/Prototype Avatar Definition")]
     public sealed class PrototypeAvatarDefinition : ScriptableObject
     {
@@ -53,6 +61,7 @@ namespace ValleDePlata.Prototype
         [SerializeField] private PrototypeAvatarRuntimeReadiness runtimeReadiness = PrototypeAvatarRuntimeReadiness.StaticPlayablePlaceholder;
         [SerializeField] private PrototypeAvatarRigReadiness rigReadiness = PrototypeAvatarRigReadiness.UnriggedStaticMesh;
         [SerializeField] private PrototypeAvatarAnimationReadiness animationReadiness = PrototypeAvatarAnimationReadiness.None;
+        [SerializeField] private PrototypeAvatarRigDecision rigDecision = PrototypeAvatarRigDecision.Undecided;
         [SerializeField] private bool isFinalIdentityLocked;
         [SerializeField] private bool supportsRuntimeCustomization;
         [SerializeField] private PrototypeAvatarSlot[] plannedCustomizationSlots =
@@ -87,6 +96,7 @@ namespace ValleDePlata.Prototype
         public PrototypeAvatarRuntimeReadiness RuntimeReadiness => runtimeReadiness;
         public PrototypeAvatarRigReadiness RigReadiness => rigReadiness;
         public PrototypeAvatarAnimationReadiness AnimationReadiness => animationReadiness;
+        public PrototypeAvatarRigDecision RigDecision => rigDecision;
         public bool IsFinalIdentityLocked => isFinalIdentityLocked;
         public bool SupportsRuntimeCustomization => supportsRuntimeCustomization;
         public PrototypeAvatarSlot[] PlannedCustomizationSlots => plannedCustomizationSlots;
@@ -107,6 +117,7 @@ namespace ValleDePlata.Prototype
             runtimeReadiness = PrototypeAvatarRuntimeReadiness.StaticPlayablePlaceholder;
             rigReadiness = PrototypeAvatarRigReadiness.UnriggedStaticMesh;
             animationReadiness = PrototypeAvatarAnimationReadiness.None;
+            rigDecision = PrototypeAvatarRigDecision.Undecided;
             isFinalIdentityLocked = false;
             supportsRuntimeCustomization = false;
             plannedCustomizationSlots = new[]
@@ -144,6 +155,7 @@ namespace ValleDePlata.Prototype
             runtimeReadiness = PrototypeAvatarRuntimeReadiness.SkinnedRigCandidate;
             rigReadiness = PrototypeAvatarRigReadiness.GenericRig;
             animationReadiness = PrototypeAvatarAnimationReadiness.GenericPlaceholderController;
+            rigDecision = PrototypeAvatarRigDecision.KeepVisualRequestHumanoidSource;
             isFinalIdentityLocked = false;
             supportsRuntimeCustomization = false;
             plannedCustomizationSlots = new[]
@@ -234,7 +246,7 @@ namespace ValleDePlata.Prototype
                 : "customization slots planned but not runtime-enabled";
             if (runtimeReadiness == PrototypeAvatarRuntimeReadiness.SkinnedRigCandidate)
             {
-                return $"{displayName} is a skinned rig candidate using {fullBodyPrefab?.name ?? "no prefab"}; current Animator is a Generic placeholder controller, and the next pass needs humanoid validation, real animation clips, and {customizationState}.";
+                return $"{displayName} is a skinned rig candidate using {fullBodyPrefab?.name ?? "no prefab"}; current Animator is a Generic placeholder controller, rig decision is {rigDecision}, and the next pass needs humanoid validation through a Humanoid-native source, real animation clips, and {customizationState}.";
             }
 
             return $"{displayName} is a static full-body placeholder using {fullBodyPrefab?.name ?? "no prefab"}; next model pass needs a rigged humanoid before animation and {customizationState}.";

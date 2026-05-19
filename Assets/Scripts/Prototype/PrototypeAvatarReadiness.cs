@@ -15,6 +15,10 @@ namespace ValleDePlata.Prototype
             int rigidbodyCount,
             bool hasAnimator,
             bool hasAnimatorController,
+            bool hasAnimatorAvatar,
+            bool hasValidAvatar,
+            bool hasHumanAvatar,
+            bool hasValidHumanoidAvatar,
             int animationClipCount,
             bool usesPlaceholderAnimationOnly,
             bool supportsRuntimeCustomization,
@@ -30,6 +34,10 @@ namespace ValleDePlata.Prototype
             RigidbodyCount = rigidbodyCount;
             HasAnimator = hasAnimator;
             HasAnimatorController = hasAnimatorController;
+            HasAnimatorAvatar = hasAnimatorAvatar;
+            HasValidAvatar = hasValidAvatar;
+            HasHumanAvatar = hasHumanAvatar;
+            HasValidHumanoidAvatar = hasValidHumanoidAvatar;
             AnimationClipCount = animationClipCount;
             UsesPlaceholderAnimationOnly = usesPlaceholderAnimationOnly;
             SupportsRuntimeCustomization = supportsRuntimeCustomization;
@@ -46,6 +54,10 @@ namespace ValleDePlata.Prototype
         public int RigidbodyCount { get; }
         public bool HasAnimator { get; }
         public bool HasAnimatorController { get; }
+        public bool HasAnimatorAvatar { get; }
+        public bool HasValidAvatar { get; }
+        public bool HasHumanAvatar { get; }
+        public bool HasValidHumanoidAvatar { get; }
         public int AnimationClipCount { get; }
         public bool UsesPlaceholderAnimationOnly { get; }
         public bool SupportsRuntimeCustomization { get; }
@@ -59,9 +71,10 @@ namespace ValleDePlata.Prototype
             && SkeletonTransformCount >= 20
             && GameplayColliderCount == 0
             && RigidbodyCount == 0;
-        public bool RequiresRiggingBeforeAnimation => RigReadiness != PrototypeAvatarRigReadiness.HumanoidRig
+        public bool RequiresRiggingBeforeAnimation => !HasValidHumanoidAvatar
             || SkinnedMeshRendererCount == 0
-            || !HasAnimator;
+            || !HasAnimator
+            || UsesPlaceholderAnimationOnly;
 
         public override string ToString()
         {
@@ -74,7 +87,10 @@ namespace ValleDePlata.Prototype
             var animation = HasAnimatorController
                 ? $"animatorClips={AnimationClipCount}, placeholderOnly={UsesPlaceholderAnimationOnly}"
                 : "animatorClips=0";
-            return $"{PrefabName}: {readiness}, renderers={RendererCount}, skinned={SkinnedMeshRendererCount}, skeletonTransforms={SkeletonTransformCount}, colliders={GameplayColliderCount}, rigidbodies={RigidbodyCount}, {animation}, height={EstimatedHeightMeters:0.00}m.";
+            var avatar = HasAnimatorAvatar
+                ? $"avatarValid={HasValidAvatar}, avatarHuman={HasHumanAvatar}"
+                : "avatar=none";
+            return $"{PrefabName}: {readiness}, renderers={RendererCount}, skinned={SkinnedMeshRendererCount}, skeletonTransforms={SkeletonTransformCount}, colliders={GameplayColliderCount}, rigidbodies={RigidbodyCount}, {avatar}, {animation}, height={EstimatedHeightMeters:0.00}m.";
         }
     }
 
@@ -95,6 +111,10 @@ namespace ValleDePlata.Prototype
                     0,
                     false,
                     false,
+                    false,
+                    false,
+                    false,
+                    false,
                     0,
                     false,
                     false,
@@ -112,6 +132,7 @@ namespace ValleDePlata.Prototype
             var transforms = root != null ? root.GetComponentsInChildren<Transform>(true) : System.Array.Empty<Transform>();
             var animator = root != null ? root.GetComponentInChildren<Animator>(true) : null;
             var controller = animator != null ? animator.runtimeAnimatorController : null;
+            var avatar = animator != null ? animator.avatar : null;
             var clips = controller != null ? controller.animationClips : System.Array.Empty<AnimationClip>();
             var skinnedMeshRendererCount = 0;
             foreach (var renderer in renderers)
@@ -142,6 +163,10 @@ namespace ValleDePlata.Prototype
                 rigidbodies.Length,
                 animator != null,
                 controller != null,
+                avatar != null,
+                avatar != null && avatar.isValid,
+                avatar != null && avatar.isHuman,
+                avatar != null && avatar.isValid && avatar.isHuman,
                 clips.Length,
                 UsesOnlyPlaceholderClips(clips),
                 definition != null && definition.SupportsRuntimeCustomization,

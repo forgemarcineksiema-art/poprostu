@@ -18,6 +18,7 @@ MonoBehaviour:
   runtimeReadiness: 1
   rigReadiness: 1
   animationReadiness: 1
+  rigDecision: 1
   isFinalIdentityLocked: 0
   supportsRuntimeCustomization: 0
   plannedCustomizationSlots: 0100000002000000030000000400000005000000060000000700000008000000

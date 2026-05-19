@@ -18,6 +18,7 @@ namespace ValleDePlata.Tests
         private const string PabloValeraV2PrefabPath = "Assets/Models/Characters/PabloValera_V2/PabloValera_V2.prefab";
         private const string PabloValeraV2GlbPath = "Assets/Models/Characters/PabloValera_V2/PabloValera_V2_Assets/selected.glb";
         private const string PabloValeraV2AnimatorPath = "Assets/Models/Characters/PabloValera_V2/Animation/PabloValera_V2_Animator.controller";
+        private const string PabloAvatarPass05ReportPath = "docs/prototype_reports/character_avatar_pass_0_5.md";
 
         private static readonly string[] ValleDePlataStreetKitStructuralPrefabs =
         {
@@ -224,18 +225,21 @@ namespace ValleDePlata.Tests
             var runtimeReadiness = serialized.FindProperty("runtimeReadiness");
             var rigReadiness = serialized.FindProperty("rigReadiness");
             var animationReadiness = serialized.FindProperty("animationReadiness");
+            var rigDecision = serialized.FindProperty("rigDecision");
             var supportsRuntimeCustomization = serialized.FindProperty("supportsRuntimeCustomization");
             var plannedSlots = serialized.FindProperty("plannedCustomizationSlots");
 
             Assert.That(runtimeReadiness, Is.Not.Null, "Avatar definition must say whether a generated mesh is playable, rigged, or custom-ready.");
             Assert.That(rigReadiness, Is.Not.Null, "Avatar definition must explicitly track rig readiness before animation work begins.");
             Assert.That(animationReadiness, Is.Not.Null, "Avatar definition must distinguish placeholder Animator setup from real locomotion animation.");
+            Assert.That(rigDecision, Is.Not.Null, "Avatar definition must record the 0.5 rig decision so future asset generation does not guess.");
             Assert.That(supportsRuntimeCustomization, Is.Not.Null, "Avatar definition must not imply future customization until slots are real.");
             Assert.That(plannedSlots, Is.Not.Null, "Avatar definition should name planned slots even while the current mesh is full-body.");
 
             Assert.That(runtimeReadiness.enumValueIndex, Is.EqualTo(1), "Pablo V2 should be tracked as a skinned rig candidate, not a final animation-ready character.");
             Assert.That(rigReadiness.enumValueIndex, Is.EqualTo(1), "The current GLB has a skin/skeleton, but Humanoid import still needs validation before animation work.");
             Assert.That(animationReadiness.enumValueIndex, Is.EqualTo(1), "Unity AI only created a Generic placeholder Animator, not real locomotion animation.");
+            Assert.That(rigDecision.enumValueIndex, Is.EqualTo(1), "0.5 should keep Pablo V2 as visual candidate while requesting a Humanoid-native source.");
             Assert.That(supportsRuntimeCustomization.boolValue, Is.False);
             Assert.That(plannedSlots.arraySize, Is.GreaterThanOrEqualTo(6), "We need the customization direction recorded before replacing the placeholder.");
 
@@ -314,6 +318,54 @@ namespace ValleDePlata.Tests
             Assert.That((bool)report.GetType().GetProperty("RequiresRiggingBeforeAnimation")!.GetValue(report), Is.True);
             Assert.That((bool)report.GetType().GetProperty("SupportsRuntimeCustomization")!.GetValue(report), Is.False);
             Assert.That(report.ToString(), Does.Contain("skinned rig candidate"));
+        }
+
+        [Test]
+        public void AvatarRigDecisionKeepsPabloV2AsVisualCandidateUntilHumanoidSourceExists()
+        {
+            var analyzerType = System.Type.GetType("ValleDePlata.Prototype.PrototypeAvatarReadiness, ValleDePlata.Prototype");
+            var decisionPolicyType = System.Type.GetType("ValleDePlata.Prototype.PrototypeAvatarRigDecisionPolicy, ValleDePlata.Prototype");
+            Assert.That(analyzerType, Is.Not.Null);
+            Assert.That(decisionPolicyType, Is.Not.Null, "0.5 needs a policy object that turns the audit into a production decision.");
+
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PabloValeraV2PrefabPath);
+            var definition = AssetDatabase.LoadAssetAtPath<ScriptableObject>("Assets/Settings/PabloPrototypeAvatar.asset");
+            var analyze = analyzerType!.GetMethod("AnalyzePrefab", BindingFlags.Public | BindingFlags.Static);
+            var report = analyze!.Invoke(null, new object[] { prefab, definition });
+
+            Assert.That(report.GetType().GetProperty("HasAnimatorAvatar"), Is.Not.Null, "Readiness should distinguish Animator component from a real Avatar.");
+            Assert.That((bool)report.GetType().GetProperty("HasAnimatorAvatar")!.GetValue(report), Is.False);
+            Assert.That((bool)report.GetType().GetProperty("HasValidHumanoidAvatar")!.GetValue(report), Is.False);
+
+            var decide = decisionPolicyType!.GetMethod("Decide", BindingFlags.Public | BindingFlags.Static);
+            Assert.That(decide, Is.Not.Null);
+            var decision = decide!.Invoke(null, new[] { report });
+            Assert.That(decision, Is.Not.Null);
+
+            var decisionName = decision!.GetType().GetProperty("Decision")!.GetValue(decision)!.ToString();
+            var reason = decision.GetType().GetProperty("Reason")!.GetValue(decision) as string;
+            var unityAiScope = decision.GetType().GetProperty("UnityAiScope")!.GetValue(decision) as string;
+            var shouldUseUnityAi = (bool)decision.GetType().GetProperty("ShouldUseUnityAiForNextAssetPass")!.GetValue(decision);
+
+            Assert.That(decisionName, Is.EqualTo("KeepVisualRequestHumanoidSource"));
+            Assert.That(reason, Does.Contain("Generic").And.Contain("Humanoid"));
+            Assert.That(unityAiScope, Does.Contain("Do not edit gameplay scripts"));
+            Assert.That(unityAiScope, Does.Contain("Humanoid-native"));
+            Assert.That(shouldUseUnityAi, Is.True);
+        }
+
+        [Test]
+        public void CharacterAvatarPass05ReportRecordsHumanoidDecisionAndUnityAiBoundary()
+        {
+            Assert.That(File.Exists(PabloAvatarPass05ReportPath), Is.True, "0.5 needs a written decision report before asking Unity AI for more asset work.");
+            var report = File.ReadAllText(PabloAvatarPass05ReportPath);
+
+            Assert.That(report, Does.Contain("# Character/Avatar Pass 0.5"));
+            Assert.That(report, Does.Contain("Decision: KeepVisualRequestHumanoidSource"));
+            Assert.That(report, Does.Contain("Current status: Pablo V2 is a Generic GLB"));
+            Assert.That(report, Does.Contain("Unity AI Assistant"));
+            Assert.That(report, Does.Contain("Do not edit gameplay scripts"));
+            Assert.That(report, Does.Contain("Humanoid-native"));
         }
 
         [Test]
