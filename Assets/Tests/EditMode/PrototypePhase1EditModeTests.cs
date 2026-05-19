@@ -188,6 +188,60 @@ namespace ValleDePlata.Tests
         }
 
         [Test]
+        public void PabloAvatarDefinitionDocumentsRuntimeReadinessAndCustomizationPlan()
+        {
+            var definition = AssetDatabase.LoadAssetAtPath<ScriptableObject>("Assets/Settings/PabloPrototypeAvatar.asset");
+            Assert.That(definition, Is.Not.Null);
+
+            var serialized = new SerializedObject(definition);
+            var runtimeReadiness = serialized.FindProperty("runtimeReadiness");
+            var rigReadiness = serialized.FindProperty("rigReadiness");
+            var supportsRuntimeCustomization = serialized.FindProperty("supportsRuntimeCustomization");
+            var plannedSlots = serialized.FindProperty("plannedCustomizationSlots");
+
+            Assert.That(runtimeReadiness, Is.Not.Null, "Avatar definition must say whether a generated mesh is playable, rigged, or custom-ready.");
+            Assert.That(rigReadiness, Is.Not.Null, "Avatar definition must explicitly track rig readiness before animation work begins.");
+            Assert.That(supportsRuntimeCustomization, Is.Not.Null, "Avatar definition must not imply future customization until slots are real.");
+            Assert.That(plannedSlots, Is.Not.Null, "Avatar definition should name planned slots even while the current mesh is full-body.");
+
+            Assert.That(runtimeReadiness.enumValueIndex, Is.EqualTo(0), "Current Pablo model should be a playable static placeholder, not final/rigged.");
+            Assert.That(rigReadiness.enumValueIndex, Is.EqualTo(0), "Unity AI generated asset is currently an unrigged static mesh.");
+            Assert.That(supportsRuntimeCustomization.boolValue, Is.False);
+            Assert.That(plannedSlots.arraySize, Is.GreaterThanOrEqualTo(6), "We need the customization direction recorded before replacing the placeholder.");
+
+            var summaryMethod = definition.GetType().GetMethod("BuildAuthoringSummary", BindingFlags.Public | BindingFlags.Instance);
+            Assert.That(summaryMethod, Is.Not.Null, "Avatar definition needs a concise authoring summary for future Unity AI/model passes.");
+            var summary = summaryMethod.Invoke(definition, null) as string;
+            Assert.That(summary, Does.Contain("static full-body placeholder"));
+            Assert.That(summary, Does.Contain("rigged humanoid"));
+            Assert.That(summary, Does.Contain("customization slots"));
+        }
+
+        [Test]
+        public void AvatarReadinessAuditClassifiesGeneratedModelAsPlayableStaticPlaceholder()
+        {
+            var analyzerType = System.Type.GetType("ValleDePlata.Prototype.PrototypeAvatarReadiness, ValleDePlata.Prototype");
+            Assert.That(analyzerType, Is.Not.Null, "PrototypeAvatarReadiness type is missing.");
+
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Models/Characters/MaleCrimeDrama.prefab");
+            var definition = AssetDatabase.LoadAssetAtPath<ScriptableObject>("Assets/Settings/PabloPrototypeAvatar.asset");
+            Assert.That(prefab, Is.Not.Null);
+            Assert.That(definition, Is.Not.Null);
+
+            var analyze = analyzerType.GetMethod("AnalyzePrefab", BindingFlags.Public | BindingFlags.Static);
+            Assert.That(analyze, Is.Not.Null, "Avatar readiness needs a prefab analyzer so generated assets are curated, not trusted blindly.");
+
+            var report = analyze.Invoke(null, new object[] { prefab, definition });
+            Assert.That((int)report.GetType().GetProperty("RendererCount")!.GetValue(report), Is.GreaterThan(0));
+            Assert.That((int)report.GetType().GetProperty("SkinnedMeshRendererCount")!.GetValue(report), Is.EqualTo(0));
+            Assert.That((int)report.GetType().GetProperty("GameplayColliderCount")!.GetValue(report), Is.EqualTo(0));
+            Assert.That((bool)report.GetType().GetProperty("IsPlayablePlaceholder")!.GetValue(report), Is.True);
+            Assert.That((bool)report.GetType().GetProperty("RequiresRiggingBeforeAnimation")!.GetValue(report), Is.True);
+            Assert.That((bool)report.GetType().GetProperty("SupportsRuntimeCustomization")!.GetValue(report), Is.False);
+            Assert.That(report.ToString(), Does.Contain("playable static placeholder"));
+        }
+
+        [Test]
         public void CharacterPresentationStateTracksIdleWalkSprint()
         {
             Assert.That(PrototypeCharacterPresentation.ResolveLocomotionState(true, 0f, false, 6.4f), Is.EqualTo(PrototypeCharacterLocomotionState.Idle));

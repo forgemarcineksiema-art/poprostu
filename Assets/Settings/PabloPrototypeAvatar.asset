@@ -15,7 +15,19 @@ MonoBehaviour:
   characterId: pablo-valera
   displayName: Pablo Valera
   assemblyMode: 0
+  runtimeReadiness: 0
+  rigReadiness: 0
   isFinalIdentityLocked: 0
+  supportsRuntimeCustomization: 0
+  plannedCustomizationSlots:
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
   fullBodyPrefab: {fileID: 8893472569153064359, guid: 40683d9347e91234e9ad858579b30685, type: 3}
   visualRootLocalPosition: {x: 0, y: 0.88, z: 0}
   visualRootLocalEuler: {x: 0, y: 0, z: 0}
@@ -23,6 +35,9 @@ MonoBehaviour:
   fullBodyLocalPosition: {x: 0, y: 0, z: 0}
   fullBodyLocalEuler: {x: 0, y: 0, z: 0}
   fullBodyLocalScale: 1.75
+  expectedRuntimeHeightMeters: 1.8
+  minimumRuntimeHeightMeters: 1.35
+  maximumRuntimeHeightMeters: 2.25
   hideVisualWhileDriving: 1
   authoringNotes: Unity AI generated full-body placeholder. Keep Pablo exchangeable
     until modular avatar direction is locked.

@@ -274,6 +274,46 @@ namespace ValleDePlata.Tests
         }
 
         [UnityTest]
+        public IEnumerator PabloAvatarViewStaysPlayableThroughVehicleVisibilityCycle()
+        {
+            SceneManager.LoadScene("Phase1_FeelPrototype");
+            yield return null;
+
+            var player = Object.FindAnyObjectByType<PrototypePlayerController>();
+            var vehicle = Object.FindAnyObjectByType<PrototypeVehicleController>();
+            var avatarView = Object.FindAnyObjectByType<PrototypeAvatarView>();
+            Assert.That(player, Is.Not.Null);
+            Assert.That(vehicle, Is.Not.Null);
+            Assert.That(avatarView, Is.Not.Null);
+            Assert.That(avatarView.AvatarDefinition, Is.Not.Null);
+            Assert.That(avatarView.FullBodyRoot, Is.Not.Null);
+
+            var validate = typeof(PrototypeAvatarView).GetMethod("ValidateRuntimeVisual", BindingFlags.Public | BindingFlags.Instance);
+            Assert.That(validate, Is.Not.Null, "Avatar view needs a runtime validation method before we build more character systems on it.");
+            var args = new object[] { null };
+            Assert.That((bool)validate.Invoke(avatarView, args), Is.True, args[0] as string);
+
+            var heightMethod = typeof(PrototypeAvatarView).GetMethod("EstimateVisualHeightMeters", BindingFlags.Public | BindingFlags.Instance);
+            Assert.That(heightMethod, Is.Not.Null, "Avatar view should expose visual height so generated characters can be fit against the motor capsule.");
+            var visualHeight = (float)heightMethod.Invoke(avatarView, null);
+            Assert.That(visualHeight, Is.InRange(1.35f, 2.25f));
+
+            player.EnterVehicle(vehicle);
+            yield return null;
+            Assert.That(avatarView.gameObject.activeSelf, Is.False, "The on-foot placeholder should hide while Pablo is driving.");
+
+            vehicle.ExitDriver();
+            yield return null;
+            Assert.That(avatarView.gameObject.activeSelf, Is.True, "The avatar view should restore after exiting the vehicle.");
+            Assert.That(avatarView.FullBodyRoot, Is.Not.Null);
+
+            foreach (var collider in avatarView.GetComponentsInChildren<Collider>(true))
+            {
+                Assert.That(collider.enabled, Is.False, $"Avatar visual collider {collider.name} must remain non-gameplay after visibility cycling.");
+            }
+        }
+
+        [UnityTest]
         public IEnumerator CameraCollisionIgnoresPrototypeMarkersButHitsWorld()
         {
             var rigObject = new GameObject("Camera Collision Rig Test");

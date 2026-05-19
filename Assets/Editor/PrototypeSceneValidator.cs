@@ -23,7 +23,12 @@ namespace ValleDePlata.Editor
             }
 
             RequireComponent<PrototypePlayerController>("Pablo Valera Prototype Controller");
-            RequireComponent<PrototypeAvatarView>("Pablo Character Visual");
+            var avatarView = RequireComponent<PrototypeAvatarView>("Pablo Character Visual");
+            if (!avatarView.ValidateRuntimeVisual(out var avatarIssue))
+            {
+                Fail($"Pablo avatar visual is not runtime-ready: {avatarIssue}");
+            }
+
             RequireComponent<PrototypeVehicleController>("Prototype Sedan");
             RequireComponent<PrototypeCameraRig>("Prototype Camera Rig");
             RequireComponent<PrototypeCursorController>("Prototype Cursor Controller");
