@@ -105,3 +105,11 @@ InitTestScene*.unity*
 
 # Auto-generated scenes by play mode tests
 /[Aa]ssets/[Ii]nit[Tt]est[Ss]cene*.unity*
+
+# Unity AI Assistant raw generation/cache output.
+# Curated assets should be copied into explicit Assets/Models or docs folders.
+/GeneratedAssets/
+/[Aa]ssets/AI Toolkit.meta
+/[Aa]ssets/AI Toolkit/
+/[Aa]ssets/Plans.meta
+/[Aa]ssets/Plans/

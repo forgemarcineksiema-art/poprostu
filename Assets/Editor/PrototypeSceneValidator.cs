@@ -72,6 +72,8 @@ namespace ValleDePlata.Editor
             RequireObject("Tight camera recovery wall");
             RequireObject("Static civilian car obstacle");
             RequireObject("Safe return marker");
+            RejectObject("VDP_StreetKit_SampleBlock");
+            RejectObject("VDP_Balcony_01");
             RequireNonBlockingDressing("Barrio Hondo overhead street sign");
             RequireNonBlockingDressing("Safe return alley arch");
             RequireNonBlockingDressing("Safe return painted arrow");
@@ -128,6 +130,14 @@ namespace ValleDePlata.Editor
             if (GameObject.Find(objectName) == null)
             {
                 Fail($"Missing required object: {objectName}");
+            }
+        }
+
+        private static void RejectObject(string objectName)
+        {
+            if (GameObject.Find(objectName) != null)
+            {
+                Fail($"{objectName} is a Unity AI preview object. Keep generated kits as curated assets until the scene builder owns placement.");
             }
         }
 

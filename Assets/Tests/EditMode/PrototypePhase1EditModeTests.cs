@@ -12,6 +12,31 @@ namespace ValleDePlata.Tests
     public sealed class PrototypePhase1EditModeTests
     {
         private const string ScenePath = "Assets/Scenes/Phase1_FeelPrototype.unity";
+        private const string ValleDePlataStreetKitPath = "Assets/Models/Environment/ValleDePlataStreetKit";
+
+        private static readonly string[] ValleDePlataStreetKitStructuralPrefabs =
+        {
+            "VDP_Corner_Alley_01",
+            "VDP_Facade_Plaster_01",
+            "VDP_Facade_Shop_01",
+            "VDP_Road_Narrow_01",
+            "VDP_Rooftop_Parapet_01",
+            "VDP_Shutter_Workshop_01",
+            "VDP_Sidewalk_Curb_01",
+            "VDP_Stairs_01",
+            "VDP_Wall_Concrete_01"
+        };
+
+        private static readonly string[] ValleDePlataStreetKitDressingPrefabs =
+        {
+            "VDP_Awning_Market_01",
+            "VDP_Balcony_01",
+            "VDP_Lamp_Street_01",
+            "VDP_Planter_Veg_01",
+            "VDP_Pole_Cable_01",
+            "VDP_Prop_Street_01",
+            "VDP_Sign_Faded_01"
+        };
 
         [Test]
         public void Phase1SceneContainsRequiredFeelPrototypeObjects()
@@ -128,6 +153,45 @@ namespace ValleDePlata.Tests
             Assert.That(manifest, Does.Contain("com.unity.ai.assistant"), "Unity AI Assistant should stay installed because we are using it as an editor asset-generation tool.");
             Assert.That(packagesLock, Does.Contain("com.unity.cloud.gltfast"), "The curated GLB model needs Unity's glTF importer dependency resolved in the package lock.");
             Assert.That(manifest, Does.Not.Contain("com.unity.ai.inference"), "The editor Assistant should not force the runtime inference stack into playable builds.");
+        }
+
+        [Test]
+        public void ValleDePlataStreetKitContainsCuratedPlayablePrefabSet()
+        {
+            foreach (var prefabName in ValleDePlataStreetKitStructuralPrefabs)
+            {
+                var prefab = LoadStreetKitPrefab(prefabName);
+                Assert.That(prefab.GetComponentsInChildren<Renderer>(true).Length, Is.GreaterThan(0), $"{prefabName} needs visible geometry.");
+                Assert.That(prefab.GetComponentsInChildren<MonoBehaviour>(true).Length, Is.EqualTo(0), $"{prefabName} must stay asset-only with no generated gameplay scripts.");
+                Assert.That(prefab.GetComponentsInChildren<Rigidbody>(true).Length, Is.EqualTo(0), $"{prefabName} must not bring runtime physics bodies.");
+                Assert.That(AllGameObjectsUseLayer(prefab, PrototypeLayers.WorldStatic), Is.True, $"{prefabName} must be on WorldStatic so camera/motor collision masks stay intentional.");
+
+                var blockingColliders = prefab.GetComponentsInChildren<Collider>(true).Where(collider => collider.enabled && !collider.isTrigger).ToArray();
+                Assert.That(blockingColliders.Length, Is.GreaterThan(0), $"{prefabName} is structural and needs simple blocking collision.");
+                Assert.That(blockingColliders.All(collider => collider is BoxCollider), Is.True, $"{prefabName} should use simple BoxColliders only.");
+            }
+
+            foreach (var prefabName in ValleDePlataStreetKitDressingPrefabs)
+            {
+                var prefab = LoadStreetKitPrefab(prefabName);
+                Assert.That(prefab.GetComponentsInChildren<Renderer>(true).Length, Is.GreaterThan(0), $"{prefabName} needs visible geometry.");
+                Assert.That(prefab.GetComponentsInChildren<MonoBehaviour>(true).Length, Is.EqualTo(0), $"{prefabName} must stay asset-only with no generated gameplay scripts.");
+                Assert.That(prefab.GetComponentsInChildren<Rigidbody>(true).Length, Is.EqualTo(0), $"{prefabName} must not bring runtime physics bodies.");
+                Assert.That(AllGameObjectsUseLayer(prefab, PrototypeLayers.CameraIgnore), Is.True, $"{prefabName} is dressing and should not shorten camera distance or block exit checks.");
+                Assert.That(prefab.GetComponentsInChildren<Collider>(true).Any(collider => collider.enabled && !collider.isTrigger), Is.False, $"{prefabName} dressing collision must be disabled until intentionally promoted.");
+            }
+        }
+
+        [Test]
+        public void ValleDePlataStreetKitSampleBlockStaysOutOfPhase1RuntimeScene()
+        {
+            var sample = AssetDatabase.LoadAssetAtPath<GameObject>($"{ValleDePlataStreetKitPath}/VDP_StreetKit_SampleBlock.prefab");
+            Assert.That(sample, Is.Not.Null, "The generated kit needs a reusable sample block asset.");
+            Assert.That(sample.GetComponentsInChildren<Renderer>(true).Length, Is.GreaterThan(0));
+
+            EditorSceneManager.OpenScene(ScenePath);
+            Assert.That(GameObject.Find("VDP_StreetKit_SampleBlock"), Is.Null, "AI preview blocks should stay out of the authored Phase 1 gameplay scene until the scene builder owns placement.");
+            Assert.That(GameObject.Find("VDP_Balcony_01"), Is.Null, "Standalone AI preview props should not remain as root objects in the gameplay scene.");
         }
 
         [Test]
@@ -1008,6 +1072,18 @@ namespace ValleDePlata.Tests
             var target = GameObject.Find(objectName);
             Assert.That(target, Is.Not.Null, $"Missing required object: {objectName}");
             return target;
+        }
+
+        private static GameObject LoadStreetKitPrefab(string prefabName)
+        {
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>($"{ValleDePlataStreetKitPath}/Prefabs/{prefabName}.prefab");
+            Assert.That(prefab, Is.Not.Null, $"Missing generated street kit prefab {prefabName}.");
+            return prefab;
+        }
+
+        private static bool AllGameObjectsUseLayer(GameObject root, int expectedLayer)
+        {
+            return root.GetComponentsInChildren<Transform>(true).All(transform => transform.gameObject.layer == expectedLayer);
         }
 
         private static bool HasComponentNamed(GameObject target, string componentTypeName)
