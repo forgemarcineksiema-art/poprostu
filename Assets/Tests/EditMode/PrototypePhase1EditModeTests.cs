@@ -18,6 +18,9 @@ namespace ValleDePlata.Tests
         private const string PabloValeraV2PrefabPath = "Assets/Models/Characters/PabloValera_V2/PabloValera_V2.prefab";
         private const string PabloValeraV2GlbPath = "Assets/Models/Characters/PabloValera_V2/PabloValera_V2_Assets/selected.glb";
         private const string PabloValeraV2AnimatorPath = "Assets/Models/Characters/PabloValera_V2/Animation/PabloValera_V2_Animator.controller";
+        private const string PabloHumanoidCandidatePrefabPath = "Assets/Models/Characters/PabloValera_HumanoidCandidate/PabloValera_HumanoidCandidate.prefab";
+        private const string PabloHumanoidCandidateAvatarPath = "Assets/Models/Characters/PabloValera_HumanoidCandidate/PabloValera_HumanoidAvatar.asset";
+        private const string PabloHumanoidCandidateAnimationsPath = "Assets/Models/Characters/PabloValera_HumanoidCandidate/Animations";
         private const string PabloAvatarPass05ReportPath = "docs/prototype_reports/character_avatar_pass_0_5.md";
 
         private static readonly string[] ValleDePlataStreetKitStructuralPrefabs =
@@ -366,6 +369,47 @@ namespace ValleDePlata.Tests
             Assert.That(report, Does.Contain("Unity AI Assistant"));
             Assert.That(report, Does.Contain("Do not edit gameplay scripts"));
             Assert.That(report, Does.Contain("Humanoid-native"));
+        }
+
+        [Test]
+        public void PabloHumanoidCandidateIsRealSkinnedHumanoidSourceAsset()
+        {
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PabloHumanoidCandidatePrefabPath);
+            var avatar = AssetDatabase.LoadAssetAtPath<Avatar>(PabloHumanoidCandidateAvatarPath);
+            Assert.That(prefab, Is.Not.Null, "Unity AI Humanoid candidate prefab is missing.");
+            Assert.That(avatar, Is.Not.Null, "Unity AI Humanoid candidate Avatar asset is missing.");
+
+            var animator = prefab.GetComponentInChildren<Animator>(true);
+            Assert.That(animator, Is.Not.Null, "Humanoid candidate needs an Animator on the prefab root.");
+            Assert.That(animator.avatar, Is.EqualTo(avatar));
+            Assert.That(animator.avatar.isValid, Is.True, "Humanoid candidate Avatar must be valid before any runtime integration.");
+            Assert.That(animator.avatar.isHuman, Is.True, "Humanoid candidate Avatar must be Human/Humanoid-compatible.");
+            Assert.That(animator.runtimeAnimatorController, Is.Null, "The source candidate should not bring a runtime controller; game integration owns controller wiring.");
+
+            var skinned = prefab.GetComponentsInChildren<SkinnedMeshRenderer>(true);
+            Assert.That(skinned.Length, Is.GreaterThan(0), "Humanoid candidate must use SkinnedMeshRenderer, not a static mesh with an Avatar nearby.");
+            Assert.That(prefab.GetComponentsInChildren<MeshRenderer>(true).Length, Is.EqualTo(0), "Visible body must not be MeshRenderer-based.");
+            Assert.That(prefab.GetComponentsInChildren<MeshFilter>(true).Length, Is.EqualTo(0), "Visible body must not be MeshFilter-based.");
+            Assert.That(prefab.GetComponentsInChildren<Rigidbody>(true).Length, Is.EqualTo(0), "Generated visual source must not bring gameplay rigidbodies.");
+            Assert.That(prefab.GetComponentsInChildren<Collider>(true).Length, Is.EqualTo(0), "Generated visual source must not bring gameplay colliders.");
+        }
+
+        [Test]
+        public void PabloHumanoidCandidateProvidesRealLocomotionSourceClips()
+        {
+            var clipGuids = AssetDatabase.FindAssets("t:AnimationClip", new[] { PabloHumanoidCandidateAnimationsPath });
+            var clips = clipGuids
+                .Select(guid => AssetDatabase.LoadAssetAtPath<AnimationClip>(AssetDatabase.GUIDToAssetPath(guid)))
+                .Where(clip => clip != null)
+                .ToArray();
+
+            CollectionAssert.AreEquivalent(new[] { "Idle", "Walk", "Run", "Sprint" }, clips.Select(clip => clip.name));
+            foreach (var clip in clips)
+            {
+                Assert.That(clip!.legacy, Is.False, $"{clip.name} must be a Mecanim clip.");
+                Assert.That(AnimationUtility.GetCurveBindings(clip).Length, Is.GreaterThan(0), $"{clip.name} must contain real animation curves.");
+                Assert.That(AnimationUtility.GetObjectReferenceCurveBindings(clip).Length, Is.EqualTo(0), $"{clip.name} should not swap assets.");
+            }
         }
 
         [Test]
