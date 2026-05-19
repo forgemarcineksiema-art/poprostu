@@ -15,15 +15,16 @@ MonoBehaviour:
   characterId: pablo-valera
   displayName: Pablo Valera
   assemblyMode: 0
-  runtimeReadiness: 1
-  rigReadiness: 1
-  animationReadiness: 1
-  rigDecision: 1
+  runtimeReadiness: 2
+  rigReadiness: 2
+  animationReadiness: 2
+  rigDecision: 2
   isFinalIdentityLocked: 0
   supportsRuntimeCustomization: 0
   plannedCustomizationSlots: 0100000002000000030000000400000005000000060000000700000008000000
-  fullBodyPrefab: {fileID: 726489239913907250, guid: 9ba2441a84ff9cf4bb43fc7632eab6bc, type: 3}
-  fullBodyInstanceName: PabloValera_V2 Visual Mesh
+  fullBodyPrefab: {fileID: 6471877606150148863, guid: 8f6ed03c85fa8f34e9e19392df87dc3a, type: 3}
+  fullBodyInstanceName: PabloValera_HumanoidCandidate Visual Mesh
+  runtimeAnimatorController: {fileID: 9100000, guid: a61f565e6110d4947888ff2c9ded69cf, type: 2}
   visualRootLocalPosition: {x: 0, y: 0.88, z: 0}
   visualRootLocalEuler: {x: 0, y: 0, z: 0}
   visualRootLocalScale: 1
@@ -34,6 +35,6 @@ MonoBehaviour:
   minimumRuntimeHeightMeters: 1.35
   maximumRuntimeHeightMeters: 2.25
   hideVisualWhileDriving: 1
-  authoringNotes: Unity AI generated Pablo V2 is a skinned rig candidate. It is not
-    final identity, not runtime-customizable, and still needs Humanoid validation
-    plus animation clips.
+  authoringNotes: Unity AI Humanoid candidate is the active runtime Humanoid visual.
+    The game owns its Animator bridge and Pablo remains exchangeable until final
+    identity/customization work.

@@ -44,6 +44,8 @@ namespace ValleDePlata.Prototype
 
             avatarDefinition.ApplyVisualRootTransform(transform);
             avatarDefinition.ApplyFullBodyTransform(fullBodyRoot);
+            ApplyRuntimeAnimatorController();
+            CacheAnimator();
         }
 
         public void SetVisible(bool visible)
@@ -132,6 +134,21 @@ namespace ValleDePlata.Prototype
                 return false;
             }
 
+            if (avatarDefinition.AnimationReadiness == PrototypeAvatarAnimationReadiness.RuntimeLocomotionDriven)
+            {
+                if (!report.HasValidHumanoidAvatar)
+                {
+                    issue = "Runtime locomotion-driven avatar needs a valid Humanoid Avatar.";
+                    return false;
+                }
+
+                if (!report.HasAnimatorController)
+                {
+                    issue = "Runtime locomotion-driven avatar needs an Animator Controller.";
+                    return false;
+                }
+            }
+
             if (!avatarDefinition.IsHeightWithinRuntimeBounds(report.EstimatedHeightMeters))
             {
                 issue = $"Avatar visual height {report.EstimatedHeightMeters:0.00}m is outside expected runtime bounds.";
@@ -196,6 +213,25 @@ namespace ValleDePlata.Prototype
             hasSpeedParameter = HasAnimatorParameter("Speed", AnimatorControllerParameterType.Float);
             hasIsSprintingParameter = HasAnimatorParameter("IsSprinting", AnimatorControllerParameterType.Bool);
             hasGroundedParameter = HasAnimatorParameter("Grounded", AnimatorControllerParameterType.Bool);
+        }
+
+        private void ApplyRuntimeAnimatorController()
+        {
+            if (avatarDefinition == null || avatarDefinition.RuntimeAnimatorController == null)
+            {
+                return;
+            }
+
+            var targetAnimator = fullBodyRoot != null
+                ? fullBodyRoot.GetComponentInChildren<Animator>(true)
+                : GetComponentInChildren<Animator>(true);
+            if (targetAnimator == null)
+            {
+                return;
+            }
+
+            targetAnimator.runtimeAnimatorController = avatarDefinition.RuntimeAnimatorController;
+            targetAnimator.applyRootMotion = false;
         }
 
         private bool HasAnimatorParameter(string parameterName, AnimatorControllerParameterType parameterType)

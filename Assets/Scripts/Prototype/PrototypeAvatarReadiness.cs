@@ -71,9 +71,21 @@ namespace ValleDePlata.Prototype
             && SkeletonTransformCount >= 20
             && GameplayColliderCount == 0
             && RigidbodyCount == 0;
+        public bool IsRuntimeHumanoidReady => RuntimeReadiness == PrototypeAvatarRuntimeReadiness.RiggedHumanoidReady
+            && SkinnedMeshRendererCount > 0
+            && SkeletonTransformCount >= 20
+            && GameplayColliderCount == 0
+            && RigidbodyCount == 0
+            && HasAnimator
+            && HasAnimatorController
+            && HasValidHumanoidAvatar
+            && AnimationClipCount > 0
+            && !UsesPlaceholderAnimationOnly;
         public bool RequiresRiggingBeforeAnimation => !HasValidHumanoidAvatar
             || SkinnedMeshRendererCount == 0
             || !HasAnimator
+            || !HasAnimatorController
+            || AnimationClipCount == 0
             || UsesPlaceholderAnimationOnly;
 
         public override string ToString()
@@ -82,6 +94,7 @@ namespace ValleDePlata.Prototype
             {
                 PrototypeAvatarRuntimeReadiness.StaticPlayablePlaceholder => "playable static placeholder",
                 PrototypeAvatarRuntimeReadiness.SkinnedRigCandidate => "skinned rig candidate",
+                PrototypeAvatarRuntimeReadiness.RiggedHumanoidReady => "runtime Humanoid candidate",
                 _ => RuntimeReadiness.ToString()
             };
             var animation = HasAnimatorController
@@ -132,6 +145,11 @@ namespace ValleDePlata.Prototype
             var transforms = root != null ? root.GetComponentsInChildren<Transform>(true) : System.Array.Empty<Transform>();
             var animator = root != null ? root.GetComponentInChildren<Animator>(true) : null;
             var controller = animator != null ? animator.runtimeAnimatorController : null;
+            if (controller == null && definition != null)
+            {
+                controller = definition.RuntimeAnimatorController;
+            }
+
             var avatar = animator != null ? animator.avatar : null;
             var clips = controller != null ? controller.animationClips : System.Array.Empty<AnimationClip>();
             var skinnedMeshRendererCount = 0;

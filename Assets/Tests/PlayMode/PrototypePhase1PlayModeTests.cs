@@ -287,7 +287,7 @@ namespace ValleDePlata.Tests
             Assert.That(avatarView, Is.Not.Null);
             Assert.That(avatarView.AvatarDefinition, Is.Not.Null);
             Assert.That(avatarView.FullBodyRoot, Is.Not.Null);
-            Assert.That(avatarView.FullBodyRoot.name, Is.EqualTo("PabloValera_V2 Visual Mesh"));
+            Assert.That(avatarView.FullBodyRoot.name, Is.EqualTo("PabloValera_HumanoidCandidate Visual Mesh"));
             Assert.That(avatarView.FullBodyRoot.GetComponentsInChildren<SkinnedMeshRenderer>(true).Length, Is.GreaterThan(0));
 
             var validate = typeof(PrototypeAvatarView).GetMethod("ValidateRuntimeVisual", BindingFlags.Public | BindingFlags.Instance);
@@ -303,8 +303,9 @@ namespace ValleDePlata.Tests
             var report = avatarView.BuildReadinessReport();
             var isSkinnedCandidate = report.GetType().GetProperty("IsSkinnedRigCandidate");
             Assert.That(isSkinnedCandidate, Is.Not.Null, "Readiness report should distinguish skinned candidates from static placeholders.");
-            Assert.That((bool)isSkinnedCandidate!.GetValue(report), Is.True);
-            Assert.That(report.RequiresRiggingBeforeAnimation, Is.True, "Pablo V2 has skin/skeleton but no animation-ready Humanoid/Animator contract yet.");
+            Assert.That((bool)isSkinnedCandidate!.GetValue(report), Is.False);
+            Assert.That(report.HasValidHumanoidAvatar, Is.True, "The active Pablo visual should now use the Humanoid candidate Avatar.");
+            Assert.That(report.RequiresRiggingBeforeAnimation, Is.False, "Runtime Pablo should be past the Generic-rig blocker before animation bridge work.");
 
             player.EnterVehicle(vehicle);
             yield return null;
@@ -334,6 +335,9 @@ namespace ValleDePlata.Tests
 
             var animator = avatarView.GetComponentInChildren<Animator>(true);
             Assert.That(animator, Is.Not.Null);
+            Assert.That(animator.avatar, Is.Not.Null);
+            Assert.That(animator.avatar.isValid, Is.True);
+            Assert.That(animator.avatar.isHuman, Is.True);
             Assert.That(animator.runtimeAnimatorController, Is.Not.Null);
 
             player.ApplyMovementForTests(Vector2.up, true, 0.25f);

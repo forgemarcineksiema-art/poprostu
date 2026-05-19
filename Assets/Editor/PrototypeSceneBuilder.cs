@@ -1,5 +1,6 @@
 using System.IO;
 using UnityEditor;
+using UnityEditor.Animations;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -14,8 +15,11 @@ namespace ValleDePlata.Editor
         private const string SettingsFolder = "Assets/Settings";
         private const string SliceDefinitionPath = "Assets/Settings/Phase1SliceDefinition.asset";
         private const string AvatarDefinitionPath = "Assets/Settings/PabloPrototypeAvatar.asset";
-        private const string PlayerVisualPrefabPath = "Assets/Models/Characters/PabloValera_V2/PabloValera_V2.prefab";
+        private const string PlayerVisualPrefabPath = "Assets/Models/Characters/PabloValera_HumanoidCandidate/PabloValera_HumanoidCandidate.prefab";
+        private const string PreviousPlayerVisualPrefabPath = "Assets/Models/Characters/PabloValera_V2/PabloValera_V2.prefab";
         private const string LegacyPlayerVisualPrefabPath = "Assets/Models/Characters/MaleCrimeDrama.prefab";
+        private const string HumanoidRuntimeAnimatorControllerPath = "Assets/Models/Characters/PabloValera_HumanoidCandidate/Animations/PabloValera_Humanoid_Runtime.controller";
+        private const string HumanoidAnimationsPath = "Assets/Models/Characters/PabloValera_HumanoidCandidate/Animations";
 
         [MenuItem("Valle de Plata/Build Phase 1 Feel Prototype Scene")]
         public static void BuildPhase1Scene()
@@ -873,7 +877,13 @@ namespace ValleDePlata.Editor
 
         private static PrototypeAvatarDefinition EnsureAvatarDefinition()
         {
+            var runtimeAnimatorController = EnsureHumanoidRuntimeAnimatorController();
             var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PlayerVisualPrefabPath);
+            if (prefab == null)
+            {
+                prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PreviousPlayerVisualPrefabPath);
+            }
+
             if (prefab == null)
             {
                 prefab = AssetDatabase.LoadAssetAtPath<GameObject>(LegacyPlayerVisualPrefabPath);
@@ -883,27 +893,36 @@ namespace ValleDePlata.Editor
             if (definition == null)
             {
                 definition = ScriptableObject.CreateInstance<PrototypeAvatarDefinition>();
-                ConfigureAvatarDefinition(definition, prefab);
+                ConfigureAvatarDefinition(definition, prefab, runtimeAnimatorController);
                 AssetDatabase.CreateAsset(definition, AvatarDefinitionPath);
             }
-            else if (prefab != null && definition.FullBodyPrefab != prefab)
+            else if (prefab != null && (definition.FullBodyPrefab != prefab || definition.RuntimeAnimatorController != runtimeAnimatorController))
             {
-                ConfigureAvatarDefinition(definition, prefab);
+                ConfigureAvatarDefinition(definition, prefab, runtimeAnimatorController);
                 EditorUtility.SetDirty(definition);
             }
             else if (!definition.Validate(out _) && prefab != null)
             {
-                ConfigureAvatarDefinition(definition, prefab);
+                ConfigureAvatarDefinition(definition, prefab, runtimeAnimatorController);
                 EditorUtility.SetDirty(definition);
             }
 
             return definition;
         }
 
-        private static void ConfigureAvatarDefinition(PrototypeAvatarDefinition definition, GameObject prefab)
+        private static void ConfigureAvatarDefinition(
+            PrototypeAvatarDefinition definition,
+            GameObject prefab,
+            RuntimeAnimatorController runtimeAnimatorController)
         {
             if (definition == null)
             {
+                return;
+            }
+
+            if (IsHumanoidRuntimeCandidate(prefab) && runtimeAnimatorController != null)
+            {
+                definition.ConfigureHumanoidRuntimeCandidate(prefab, runtimeAnimatorController);
                 return;
             }
 
@@ -914,6 +933,128 @@ namespace ValleDePlata.Editor
             }
 
             definition.ConfigurePrototypePlaceholder(prefab);
+        }
+
+        private static bool IsHumanoidRuntimeCandidate(GameObject prefab)
+        {
+            if (prefab == null || prefab.GetComponentsInChildren<SkinnedMeshRenderer>(true).Length == 0)
+            {
+                return false;
+            }
+
+            var animator = prefab.GetComponentInChildren<Animator>(true);
+            return animator != null
+                && animator.avatar != null
+                && animator.avatar.isValid
+                && animator.avatar.isHuman;
+        }
+
+        private static AnimatorController EnsureHumanoidRuntimeAnimatorController()
+        {
+            if (!AssetDatabase.IsValidFolder(HumanoidAnimationsPath))
+            {
+                return null;
+            }
+
+            var controller = AssetDatabase.LoadAssetAtPath<AnimatorController>(HumanoidRuntimeAnimatorControllerPath);
+            if (controller == null)
+            {
+                controller = AnimatorController.CreateAnimatorControllerAtPath(HumanoidRuntimeAnimatorControllerPath);
+            }
+
+            ConfigureHumanoidRuntimeAnimatorController(controller);
+            EditorUtility.SetDirty(controller);
+            AssetDatabase.SaveAssets();
+            return controller;
+        }
+
+        private static void ConfigureHumanoidRuntimeAnimatorController(AnimatorController controller)
+        {
+            if (controller == null)
+            {
+                return;
+            }
+
+            EnsureAnimatorParameter(controller, "Speed", AnimatorControllerParameterType.Float);
+            EnsureAnimatorParameter(controller, "IsSprinting", AnimatorControllerParameterType.Bool);
+            EnsureAnimatorParameter(controller, "Grounded", AnimatorControllerParameterType.Bool);
+
+            var stateMachine = controller.layers[0].stateMachine;
+            foreach (var childState in stateMachine.states)
+            {
+                stateMachine.RemoveState(childState.state);
+            }
+
+            var idle = AddClipState(stateMachine, "Idle", new Vector3(220f, 0f, 0f));
+            var walk = AddClipState(stateMachine, "Walk", new Vector3(220f, 70f, 0f));
+            var run = AddClipState(stateMachine, "Run", new Vector3(220f, 140f, 0f));
+            var sprint = AddClipState(stateMachine, "Sprint", new Vector3(220f, 210f, 0f));
+            stateMachine.defaultState = idle;
+
+            AddFloatTransition(idle, walk, "Speed", AnimatorConditionMode.Greater, 0.15f);
+            AddFloatTransition(walk, idle, "Speed", AnimatorConditionMode.Less, 0.12f);
+            AddFloatTransition(walk, run, "Speed", AnimatorConditionMode.Greater, 4.2f);
+            AddFloatTransition(run, walk, "Speed", AnimatorConditionMode.Less, 3.9f);
+            AddBoolTransition(idle, sprint, "IsSprinting", true);
+            AddBoolTransition(walk, sprint, "IsSprinting", true);
+            AddBoolTransition(run, sprint, "IsSprinting", true);
+            AddBoolTransition(sprint, run, "IsSprinting", false);
+            AddFloatTransition(sprint, idle, "Speed", AnimatorConditionMode.Less, 0.12f);
+        }
+
+        private static void EnsureAnimatorParameter(
+            AnimatorController controller,
+            string parameterName,
+            AnimatorControllerParameterType parameterType)
+        {
+            foreach (var parameter in controller.parameters)
+            {
+                if (parameter.name == parameterName)
+                {
+                    if (parameter.type == parameterType)
+                    {
+                        return;
+                    }
+
+                    controller.RemoveParameter(parameter);
+                    break;
+                }
+            }
+
+            controller.AddParameter(parameterName, parameterType);
+        }
+
+        private static AnimatorState AddClipState(AnimatorStateMachine stateMachine, string stateName, Vector3 position)
+        {
+            var state = stateMachine.AddState(stateName, position);
+            state.motion = AssetDatabase.LoadAssetAtPath<AnimationClip>($"{HumanoidAnimationsPath}/{stateName}.anim");
+            state.writeDefaultValues = true;
+            return state;
+        }
+
+        private static void AddFloatTransition(
+            AnimatorState from,
+            AnimatorState to,
+            string parameterName,
+            AnimatorConditionMode mode,
+            float threshold)
+        {
+            var transition = from.AddTransition(to);
+            transition.hasExitTime = false;
+            transition.duration = 0.08f;
+            transition.AddCondition(mode, threshold, parameterName);
+        }
+
+        private static void AddBoolTransition(
+            AnimatorState from,
+            AnimatorState to,
+            string parameterName,
+            bool expected)
+        {
+            var transition = from.AddTransition(to);
+            transition.hasExitTime = false;
+            transition.duration = 0.08f;
+            transition.AddCondition(expected ? AnimatorConditionMode.If : AnimatorConditionMode.IfNot, 0f, parameterName);
         }
 
         private static void ClearGeneratedAvatarChildren(Transform visualRoot)

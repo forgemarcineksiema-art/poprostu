@@ -70,9 +70,14 @@ namespace ValleDePlata.Prototype
 
         public void ApplyLocomotion(float speed, bool sprintHeld, float sprintSpeed, float deltaTime)
         {
+            ApplyLocomotion(speed, sprintHeld, sprintSpeed, true, deltaTime);
+        }
+
+        public void ApplyLocomotion(float speed, bool sprintHeld, float sprintSpeed, bool grounded, float deltaTime)
+        {
             var visible = visualRoot == null || visualRoot.gameObject.activeInHierarchy;
             CurrentState = ResolveLocomotionState(visible, speed, sprintHeld, sprintSpeed, walkThreshold, sprintSpeedRatio);
-            avatarView?.ApplyAnimatorLocomotion(speed, sprintHeld && visible, visible);
+            avatarView?.ApplyAnimatorLocomotion(speed, sprintHeld && visible, visible && grounded);
 
             if (visualRoot == null)
             {

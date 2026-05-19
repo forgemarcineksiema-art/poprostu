@@ -78,6 +78,7 @@ namespace ValleDePlata.Prototype
 
         [SerializeField] private GameObject fullBodyPrefab;
         [SerializeField] private string fullBodyInstanceName = "MaleCrimeDrama Visual Mesh";
+        [SerializeField] private RuntimeAnimatorController runtimeAnimatorController;
         [SerializeField] private Vector3 visualRootLocalPosition = new(0f, 0.88f, 0f);
         [SerializeField] private Vector3 visualRootLocalEuler;
         [SerializeField] private float visualRootLocalScale = 1f;
@@ -104,6 +105,7 @@ namespace ValleDePlata.Prototype
         public string FullBodyInstanceName => string.IsNullOrWhiteSpace(fullBodyInstanceName)
             ? "Pablo Avatar Visual Mesh"
             : fullBodyInstanceName;
+        public RuntimeAnimatorController RuntimeAnimatorController => runtimeAnimatorController;
         public float ExpectedRuntimeHeightMeters => expectedRuntimeHeightMeters;
         public float MinimumRuntimeHeightMeters => minimumRuntimeHeightMeters;
         public float MaximumRuntimeHeightMeters => maximumRuntimeHeightMeters;
@@ -134,6 +136,7 @@ namespace ValleDePlata.Prototype
 
             fullBodyPrefab = prefab;
             fullBodyInstanceName = "MaleCrimeDrama Visual Mesh";
+            runtimeAnimatorController = null;
             visualRootLocalPosition = new Vector3(0f, 0.88f, 0f);
             visualRootLocalEuler = Vector3.zero;
             visualRootLocalScale = 1f;
@@ -172,6 +175,7 @@ namespace ValleDePlata.Prototype
 
             fullBodyPrefab = prefab;
             fullBodyInstanceName = "PabloValera_V2 Visual Mesh";
+            runtimeAnimatorController = null;
             visualRootLocalPosition = new Vector3(0f, 0.88f, 0f);
             visualRootLocalEuler = Vector3.zero;
             visualRootLocalScale = 1f;
@@ -183,6 +187,45 @@ namespace ValleDePlata.Prototype
             maximumRuntimeHeightMeters = 2.25f;
             hideVisualWhileDriving = true;
             authoringNotes = "Unity AI generated Pablo V2 is a skinned rig candidate. It is not final identity, not runtime-customizable, and still needs Humanoid validation plus animation clips.";
+        }
+
+        public void ConfigureHumanoidRuntimeCandidate(GameObject prefab, RuntimeAnimatorController controller)
+        {
+            characterId = "pablo-valera";
+            displayName = "Pablo Valera";
+            assemblyMode = PrototypeAvatarAssemblyMode.FullBodyPlaceholder;
+            runtimeReadiness = PrototypeAvatarRuntimeReadiness.RiggedHumanoidReady;
+            rigReadiness = PrototypeAvatarRigReadiness.HumanoidRig;
+            animationReadiness = PrototypeAvatarAnimationReadiness.RuntimeLocomotionDriven;
+            rigDecision = PrototypeAvatarRigDecision.ReadyForHumanoidLocomotion;
+            isFinalIdentityLocked = false;
+            supportsRuntimeCustomization = false;
+            plannedCustomizationSlots = new[]
+            {
+                PrototypeAvatarSlot.Body,
+                PrototypeAvatarSlot.Head,
+                PrototypeAvatarSlot.Hair,
+                PrototypeAvatarSlot.Jacket,
+                PrototypeAvatarSlot.Shirt,
+                PrototypeAvatarSlot.Pants,
+                PrototypeAvatarSlot.Shoes,
+                PrototypeAvatarSlot.Accessory
+            };
+
+            fullBodyPrefab = prefab;
+            fullBodyInstanceName = "PabloValera_HumanoidCandidate Visual Mesh";
+            runtimeAnimatorController = controller;
+            visualRootLocalPosition = new Vector3(0f, 0.88f, 0f);
+            visualRootLocalEuler = Vector3.zero;
+            visualRootLocalScale = 1f;
+            fullBodyLocalPosition = Vector3.zero;
+            fullBodyLocalEuler = Vector3.zero;
+            fullBodyLocalScale = 1.8f;
+            expectedRuntimeHeightMeters = 1.8f;
+            minimumRuntimeHeightMeters = 1.35f;
+            maximumRuntimeHeightMeters = 2.25f;
+            hideVisualWhileDriving = true;
+            authoringNotes = "Unity AI Humanoid candidate is the active runtime Humanoid visual. The game owns its Animator bridge and Pablo remains exchangeable until final identity/customization work.";
         }
 
         public bool Validate(out string error)
@@ -235,6 +278,13 @@ namespace ValleDePlata.Prototype
                 return false;
             }
 
+            if (animationReadiness == PrototypeAvatarAnimationReadiness.RuntimeLocomotionDriven
+                && runtimeAnimatorController == null)
+            {
+                error = "Runtime locomotion-driven avatar needs a game-owned Animator Controller.";
+                return false;
+            }
+
             error = string.Empty;
             return true;
         }
@@ -247,6 +297,11 @@ namespace ValleDePlata.Prototype
             if (runtimeReadiness == PrototypeAvatarRuntimeReadiness.SkinnedRigCandidate)
             {
                 return $"{displayName} is a skinned rig candidate using {fullBodyPrefab?.name ?? "no prefab"}; current Animator is a Generic placeholder controller, rig decision is {rigDecision}, and the next pass needs humanoid validation through a Humanoid-native source, real animation clips, and {customizationState}.";
+            }
+
+            if (runtimeReadiness == PrototypeAvatarRuntimeReadiness.RiggedHumanoidReady)
+            {
+                return $"{displayName} is a runtime Humanoid candidate using {fullBodyPrefab?.name ?? "no prefab"}; the Animator bridge is game-owned, rig decision is {rigDecision}, and the model remains exchangeable with {customizationState}.";
             }
 
             return $"{displayName} is a static full-body placeholder using {fullBodyPrefab?.name ?? "no prefab"}; next model pass needs a rigged humanoid before animation and {customizationState}.";

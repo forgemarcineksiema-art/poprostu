@@ -145,7 +145,7 @@ namespace ValleDePlata.Prototype
             var desiredMove = BuildCameraRelativeMove(moveInput, cameraForward, cameraRight);
             var speed = sprintHeld ? sprintSpeed : walkSpeed;
             characterMotor.Move(desiredMove, speed, acceleration, deceleration, gravity, turnSharpness, deltaTime);
-            characterPresentation?.ApplyLocomotion(characterMotor.HorizontalVelocity.magnitude, sprintHeld, sprintSpeed, deltaTime);
+            characterPresentation?.ApplyLocomotion(characterMotor.HorizontalVelocity.magnitude, sprintHeld, sprintSpeed, characterMotor.IsGrounded, deltaTime);
 
             PrototypeDebugState.Speed = characterMotor.HorizontalVelocity.magnitude;
             PrototypeDebugState.Focus = "On foot";
