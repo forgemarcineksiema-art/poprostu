@@ -24,6 +24,7 @@ namespace ValleDePlata.Prototype
     public enum PrototypeAvatarRuntimeReadiness
     {
         StaticPlayablePlaceholder,
+        SkinnedRigCandidate,
         RiggedHumanoidReady,
         ModularCustomizationReady
     }
@@ -58,6 +59,7 @@ namespace ValleDePlata.Prototype
         };
 
         [SerializeField] private GameObject fullBodyPrefab;
+        [SerializeField] private string fullBodyInstanceName = "MaleCrimeDrama Visual Mesh";
         [SerializeField] private Vector3 visualRootLocalPosition = new(0f, 0.88f, 0f);
         [SerializeField] private Vector3 visualRootLocalEuler;
         [SerializeField] private float visualRootLocalScale = 1f;
@@ -79,6 +81,9 @@ namespace ValleDePlata.Prototype
         public bool SupportsRuntimeCustomization => supportsRuntimeCustomization;
         public PrototypeAvatarSlot[] PlannedCustomizationSlots => plannedCustomizationSlots;
         public GameObject FullBodyPrefab => fullBodyPrefab;
+        public string FullBodyInstanceName => string.IsNullOrWhiteSpace(fullBodyInstanceName)
+            ? "Pablo Avatar Visual Mesh"
+            : fullBodyInstanceName;
         public float ExpectedRuntimeHeightMeters => expectedRuntimeHeightMeters;
         public float MinimumRuntimeHeightMeters => minimumRuntimeHeightMeters;
         public float MaximumRuntimeHeightMeters => maximumRuntimeHeightMeters;
@@ -106,6 +111,7 @@ namespace ValleDePlata.Prototype
             };
 
             fullBodyPrefab = prefab;
+            fullBodyInstanceName = "MaleCrimeDrama Visual Mesh";
             visualRootLocalPosition = new Vector3(0f, 0.88f, 0f);
             visualRootLocalEuler = Vector3.zero;
             visualRootLocalScale = 1f;
@@ -117,6 +123,42 @@ namespace ValleDePlata.Prototype
             maximumRuntimeHeightMeters = 2.25f;
             hideVisualWhileDriving = true;
             authoringNotes = "Unity AI generated full-body placeholder. Keep Pablo exchangeable until modular avatar direction is locked.";
+        }
+
+        public void ConfigureSkinnedRigCandidate(GameObject prefab)
+        {
+            characterId = "pablo-valera";
+            displayName = "Pablo Valera";
+            assemblyMode = PrototypeAvatarAssemblyMode.FullBodyPlaceholder;
+            runtimeReadiness = PrototypeAvatarRuntimeReadiness.SkinnedRigCandidate;
+            rigReadiness = PrototypeAvatarRigReadiness.GenericRig;
+            isFinalIdentityLocked = false;
+            supportsRuntimeCustomization = false;
+            plannedCustomizationSlots = new[]
+            {
+                PrototypeAvatarSlot.Body,
+                PrototypeAvatarSlot.Head,
+                PrototypeAvatarSlot.Hair,
+                PrototypeAvatarSlot.Jacket,
+                PrototypeAvatarSlot.Shirt,
+                PrototypeAvatarSlot.Pants,
+                PrototypeAvatarSlot.Shoes,
+                PrototypeAvatarSlot.Accessory
+            };
+
+            fullBodyPrefab = prefab;
+            fullBodyInstanceName = "PabloValera_V2 Visual Mesh";
+            visualRootLocalPosition = new Vector3(0f, 0.88f, 0f);
+            visualRootLocalEuler = Vector3.zero;
+            visualRootLocalScale = 1f;
+            fullBodyLocalPosition = Vector3.zero;
+            fullBodyLocalEuler = Vector3.zero;
+            fullBodyLocalScale = 1.8f;
+            expectedRuntimeHeightMeters = 1.8f;
+            minimumRuntimeHeightMeters = 1.35f;
+            maximumRuntimeHeightMeters = 2.25f;
+            hideVisualWhileDriving = true;
+            authoringNotes = "Unity AI generated Pablo V2 is a skinned rig candidate. It is not final identity, not runtime-customizable, and still needs Humanoid validation plus animation clips.";
         }
 
         public bool Validate(out string error)
@@ -135,7 +177,13 @@ namespace ValleDePlata.Prototype
 
             if (fullBodyPrefab == null)
             {
-                error = "Full-body placeholder prefab is missing.";
+                error = "Full-body avatar prefab is missing.";
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(fullBodyInstanceName))
+            {
+                error = "Full-body avatar instance name is missing.";
                 return false;
             }
 
@@ -172,6 +220,11 @@ namespace ValleDePlata.Prototype
             var customizationState = supportsRuntimeCustomization
                 ? "runtime customization enabled"
                 : "customization slots planned but not runtime-enabled";
+            if (runtimeReadiness == PrototypeAvatarRuntimeReadiness.SkinnedRigCandidate)
+            {
+                return $"{displayName} is a skinned rig candidate using {fullBodyPrefab?.name ?? "no prefab"}; next pass needs humanoid validation, animation clips, and {customizationState}.";
+            }
+
             return $"{displayName} is a static full-body placeholder using {fullBodyPrefab?.name ?? "no prefab"}; next model pass needs a rigged humanoid before animation and {customizationState}.";
         }
 

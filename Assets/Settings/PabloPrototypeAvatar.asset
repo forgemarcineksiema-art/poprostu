@@ -15,29 +15,23 @@ MonoBehaviour:
   characterId: pablo-valera
   displayName: Pablo Valera
   assemblyMode: 0
-  runtimeReadiness: 0
-  rigReadiness: 0
+  runtimeReadiness: 1
+  rigReadiness: 1
   isFinalIdentityLocked: 0
   supportsRuntimeCustomization: 0
-  plannedCustomizationSlots:
-  - 1
-  - 2
-  - 3
-  - 4
-  - 5
-  - 6
-  - 7
-  - 8
-  fullBodyPrefab: {fileID: 8893472569153064359, guid: 40683d9347e91234e9ad858579b30685, type: 3}
+  plannedCustomizationSlots: 0100000002000000030000000400000005000000060000000700000008000000
+  fullBodyPrefab: {fileID: 726489239913907250, guid: 9ba2441a84ff9cf4bb43fc7632eab6bc, type: 3}
+  fullBodyInstanceName: PabloValera_V2 Visual Mesh
   visualRootLocalPosition: {x: 0, y: 0.88, z: 0}
   visualRootLocalEuler: {x: 0, y: 0, z: 0}
   visualRootLocalScale: 1
   fullBodyLocalPosition: {x: 0, y: 0, z: 0}
   fullBodyLocalEuler: {x: 0, y: 0, z: 0}
-  fullBodyLocalScale: 1.75
+  fullBodyLocalScale: 1.8
   expectedRuntimeHeightMeters: 1.8
   minimumRuntimeHeightMeters: 1.35
   maximumRuntimeHeightMeters: 2.25
   hideVisualWhileDriving: 1
-  authoringNotes: Unity AI generated full-body placeholder. Keep Pablo exchangeable
-    until modular avatar direction is locked.
+  authoringNotes: Unity AI generated Pablo V2 is a skinned rig candidate. It is not
+    final identity, not runtime-customizable, and still needs Humanoid validation
+    plus animation clips.

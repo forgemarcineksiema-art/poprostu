@@ -13,6 +13,9 @@ namespace ValleDePlata.Tests
     {
         private const string ScenePath = "Assets/Scenes/Phase1_FeelPrototype.unity";
         private const string ValleDePlataStreetKitPath = "Assets/Models/Environment/ValleDePlataStreetKit";
+        private const string MaleCrimeDramaPrefabPath = "Assets/Models/Characters/MaleCrimeDrama.prefab";
+        private const string PabloValeraV2PrefabPath = "Assets/Models/Characters/PabloValera_V2/PabloValera_V2.prefab";
+        private const string PabloValeraV2GlbPath = "Assets/Models/Characters/PabloValera_V2/PabloValera_V2_Assets/selected.glb";
 
         private static readonly string[] ValleDePlataStreetKitStructuralPrefabs =
         {
@@ -111,9 +114,10 @@ namespace ValleDePlata.Tests
             Assert.That(visual.gameObject.layer, Is.EqualTo(PrototypeLayers.Player));
             Assert.That(presentation.VisualRoot, Is.EqualTo(visual));
 
-            var meshInstance = visual.Find("MaleCrimeDrama Visual Mesh");
+            var meshInstance = visual.Find("PabloValera_V2 Visual Mesh");
             Assert.That(meshInstance, Is.Not.Null, "The curated AI character prefab should be the visible player mesh.");
             Assert.That(meshInstance.GetComponentsInChildren<Renderer>(true).Length, Is.GreaterThan(0));
+            Assert.That(meshInstance.GetComponentsInChildren<SkinnedMeshRenderer>(true).Length, Is.GreaterThan(0), "Pablo V2 should be the active skinned visual candidate.");
 
             foreach (var collider in visual.GetComponentsInChildren<Collider>(true))
             {
@@ -124,7 +128,7 @@ namespace ValleDePlata.Tests
         [Test]
         public void CuratedAiCharacterAssetIsLightweightStaticVisual()
         {
-            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Models/Characters/MaleCrimeDrama.prefab");
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(MaleCrimeDramaPrefabPath);
             Assert.That(prefab, Is.Not.Null, "Missing curated Unity AI character prefab.");
             Assert.That(prefab.GetComponentsInChildren<Renderer>(true).Length, Is.GreaterThan(0));
             Assert.That(prefab.GetComponentsInChildren<SkinnedMeshRenderer>(true).Length, Is.EqualTo(0), "This generated drop is a static mesh and should not be treated as a rigged character yet.");
@@ -136,7 +140,24 @@ namespace ValleDePlata.Tests
         }
 
         [Test]
-        public void PabloAvatarDefinitionTreatsGeneratedModelAsExchangeablePlaceholder()
+        public void PabloValeraV2GeneratedAssetIsSkinnedRigCandidate()
+        {
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PabloValeraV2PrefabPath);
+            Assert.That(prefab, Is.Not.Null, "Missing Pablo Valera V2 generated prefab.");
+            Assert.That(prefab.GetComponentsInChildren<Renderer>(true).Length, Is.GreaterThan(0));
+            Assert.That(prefab.GetComponentsInChildren<SkinnedMeshRenderer>(true).Length, Is.GreaterThan(0), "Pablo V2 should be a skinned mesh, not another static placeholder.");
+            Assert.That(prefab.GetComponentsInChildren<Collider>(true).Length, Is.EqualTo(0), "Generated playable visuals must not bring gameplay colliders.");
+            Assert.That(prefab.GetComponentsInChildren<Rigidbody>(true).Length, Is.EqualTo(0), "Generated playable visuals must not bring physics bodies.");
+            Assert.That(prefab.GetComponentsInChildren<Transform>(true).Length, Is.GreaterThanOrEqualTo(35), "The rig candidate should preserve the generated skeleton hierarchy.");
+
+            var glb = new FileInfo(PabloValeraV2GlbPath);
+            Assert.That(glb.Exists, Is.True);
+            Assert.That(glb.Length, Is.GreaterThan(10_000_000), "Pablo V2 should be the richer generated character, not the previous tiny placeholder.");
+            Assert.That(glb.Length, Is.LessThan(90_000_000), "Keep generated character assets below GitHub's hard file limit until an LFS policy is added.");
+        }
+
+        [Test]
+        public void PabloAvatarDefinitionUsesV2AsExchangeableRiggedCandidate()
         {
             var definitionType = System.Type.GetType("ValleDePlata.Prototype.PrototypeAvatarDefinition, ValleDePlata.Prototype");
             Assert.That(definitionType, Is.Not.Null, "PrototypeAvatarDefinition type is missing.");
@@ -148,9 +169,12 @@ namespace ValleDePlata.Tests
             var serialized = new SerializedObject(definition);
             Assert.That(serialized.FindProperty("characterId").stringValue, Is.EqualTo("pablo-valera"));
             Assert.That(serialized.FindProperty("displayName").stringValue, Is.EqualTo("Pablo Valera"));
-            Assert.That(serialized.FindProperty("isFinalIdentityLocked").boolValue, Is.False, "Current Unity AI character is a placeholder, not final Pablo identity.");
-            Assert.That(serialized.FindProperty("fullBodyPrefab").objectReferenceValue, Is.EqualTo(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Models/Characters/MaleCrimeDrama.prefab")));
-            Assert.That(serialized.FindProperty("fullBodyLocalScale").floatValue, Is.EqualTo(1.75f).Within(0.001f));
+            Assert.That(serialized.FindProperty("isFinalIdentityLocked").boolValue, Is.False, "Pablo V2 is a better candidate, not final locked identity.");
+            Assert.That(serialized.FindProperty("fullBodyPrefab").objectReferenceValue, Is.EqualTo(AssetDatabase.LoadAssetAtPath<GameObject>(PabloValeraV2PrefabPath)));
+            var fullBodyInstanceName = serialized.FindProperty("fullBodyInstanceName");
+            Assert.That(fullBodyInstanceName, Is.Not.Null, "Avatar definition should own the scene instance name so old generated meshes can be replaced safely.");
+            Assert.That(fullBodyInstanceName.stringValue, Is.EqualTo("PabloValera_V2 Visual Mesh"));
+            Assert.That(serialized.FindProperty("fullBodyLocalScale").floatValue, Is.EqualTo(1.8f).Within(0.001f));
 
             var validate = definitionType.GetMethod("Validate", BindingFlags.Public | BindingFlags.Instance);
             Assert.That(validate, Is.Not.Null);
@@ -175,8 +199,9 @@ namespace ValleDePlata.Tests
             Assert.That(definition, Is.Not.Null);
             Assert.That(AssetDatabase.GetAssetPath(definition), Is.EqualTo("Assets/Settings/PabloPrototypeAvatar.asset"));
             Assert.That(fullBodyRoot, Is.Not.Null);
-            Assert.That(fullBodyRoot.name, Is.EqualTo("MaleCrimeDrama Visual Mesh"));
-            Assert.That(fullBodyRoot.localScale, Is.EqualTo(Vector3.one * 1.75f));
+            Assert.That(fullBodyRoot.name, Is.EqualTo("PabloValera_V2 Visual Mesh"));
+            Assert.That(fullBodyRoot.localScale, Is.EqualTo(Vector3.one * 1.8f));
+            Assert.That(fullBodyRoot.GetComponentsInChildren<SkinnedMeshRenderer>(true).Length, Is.GreaterThan(0));
 
             var presentationObject = new SerializedObject(presentation);
             Assert.That(presentationObject.FindProperty("avatarView").objectReferenceValue, Is.EqualTo(avatarView));
@@ -204,26 +229,26 @@ namespace ValleDePlata.Tests
             Assert.That(supportsRuntimeCustomization, Is.Not.Null, "Avatar definition must not imply future customization until slots are real.");
             Assert.That(plannedSlots, Is.Not.Null, "Avatar definition should name planned slots even while the current mesh is full-body.");
 
-            Assert.That(runtimeReadiness.enumValueIndex, Is.EqualTo(0), "Current Pablo model should be a playable static placeholder, not final/rigged.");
-            Assert.That(rigReadiness.enumValueIndex, Is.EqualTo(0), "Unity AI generated asset is currently an unrigged static mesh.");
+            Assert.That(runtimeReadiness.enumValueIndex, Is.EqualTo(1), "Pablo V2 should be tracked as a skinned rig candidate, not a final animation-ready character.");
+            Assert.That(rigReadiness.enumValueIndex, Is.EqualTo(1), "The current GLB has a skin/skeleton, but Humanoid import still needs validation before animation work.");
             Assert.That(supportsRuntimeCustomization.boolValue, Is.False);
             Assert.That(plannedSlots.arraySize, Is.GreaterThanOrEqualTo(6), "We need the customization direction recorded before replacing the placeholder.");
 
             var summaryMethod = definition.GetType().GetMethod("BuildAuthoringSummary", BindingFlags.Public | BindingFlags.Instance);
             Assert.That(summaryMethod, Is.Not.Null, "Avatar definition needs a concise authoring summary for future Unity AI/model passes.");
             var summary = summaryMethod.Invoke(definition, null) as string;
-            Assert.That(summary, Does.Contain("static full-body placeholder"));
-            Assert.That(summary, Does.Contain("rigged humanoid"));
+            Assert.That(summary, Does.Contain("skinned rig candidate"));
+            Assert.That(summary, Does.Contain("humanoid validation"));
             Assert.That(summary, Does.Contain("customization slots"));
         }
 
         [Test]
-        public void AvatarReadinessAuditClassifiesGeneratedModelAsPlayableStaticPlaceholder()
+        public void AvatarReadinessAuditClassifiesV2AsSkinnedCandidate()
         {
             var analyzerType = System.Type.GetType("ValleDePlata.Prototype.PrototypeAvatarReadiness, ValleDePlata.Prototype");
             Assert.That(analyzerType, Is.Not.Null, "PrototypeAvatarReadiness type is missing.");
 
-            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Models/Characters/MaleCrimeDrama.prefab");
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PabloValeraV2PrefabPath);
             var definition = AssetDatabase.LoadAssetAtPath<ScriptableObject>("Assets/Settings/PabloPrototypeAvatar.asset");
             Assert.That(prefab, Is.Not.Null);
             Assert.That(definition, Is.Not.Null);
@@ -233,12 +258,17 @@ namespace ValleDePlata.Tests
 
             var report = analyze.Invoke(null, new object[] { prefab, definition });
             Assert.That((int)report.GetType().GetProperty("RendererCount")!.GetValue(report), Is.GreaterThan(0));
-            Assert.That((int)report.GetType().GetProperty("SkinnedMeshRendererCount")!.GetValue(report), Is.EqualTo(0));
+            Assert.That((int)report.GetType().GetProperty("SkinnedMeshRendererCount")!.GetValue(report), Is.GreaterThan(0));
+            var skeletonCount = report.GetType().GetProperty("SkeletonTransformCount");
+            Assert.That(skeletonCount, Is.Not.Null, "Readiness report should expose skeleton transform count for AI-rigged candidates.");
+            Assert.That((int)skeletonCount!.GetValue(report), Is.GreaterThanOrEqualTo(35));
             Assert.That((int)report.GetType().GetProperty("GameplayColliderCount")!.GetValue(report), Is.EqualTo(0));
-            Assert.That((bool)report.GetType().GetProperty("IsPlayablePlaceholder")!.GetValue(report), Is.True);
+            var isSkinnedCandidate = report.GetType().GetProperty("IsSkinnedRigCandidate");
+            Assert.That(isSkinnedCandidate, Is.Not.Null, "Readiness report should distinguish skinned candidates from static placeholders.");
+            Assert.That((bool)isSkinnedCandidate!.GetValue(report), Is.True);
             Assert.That((bool)report.GetType().GetProperty("RequiresRiggingBeforeAnimation")!.GetValue(report), Is.True);
             Assert.That((bool)report.GetType().GetProperty("SupportsRuntimeCustomization")!.GetValue(report), Is.False);
-            Assert.That(report.ToString(), Does.Contain("playable static placeholder"));
+            Assert.That(report.ToString(), Does.Contain("skinned rig candidate"));
         }
 
         [Test]

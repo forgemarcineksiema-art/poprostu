@@ -10,6 +10,7 @@ namespace ValleDePlata.Prototype
             PrototypeAvatarRigReadiness rigReadiness,
             int rendererCount,
             int skinnedMeshRendererCount,
+            int skeletonTransformCount,
             int gameplayColliderCount,
             int rigidbodyCount,
             bool hasAnimator,
@@ -21,6 +22,7 @@ namespace ValleDePlata.Prototype
             RigReadiness = rigReadiness;
             RendererCount = rendererCount;
             SkinnedMeshRendererCount = skinnedMeshRendererCount;
+            SkeletonTransformCount = skeletonTransformCount;
             GameplayColliderCount = gameplayColliderCount;
             RigidbodyCount = rigidbodyCount;
             HasAnimator = hasAnimator;
@@ -33,6 +35,7 @@ namespace ValleDePlata.Prototype
         public PrototypeAvatarRigReadiness RigReadiness { get; }
         public int RendererCount { get; }
         public int SkinnedMeshRendererCount { get; }
+        public int SkeletonTransformCount { get; }
         public int GameplayColliderCount { get; }
         public int RigidbodyCount { get; }
         public bool HasAnimator { get; }
@@ -42,16 +45,24 @@ namespace ValleDePlata.Prototype
             && RendererCount > 0
             && GameplayColliderCount == 0
             && RigidbodyCount == 0;
+        public bool IsSkinnedRigCandidate => RuntimeReadiness == PrototypeAvatarRuntimeReadiness.SkinnedRigCandidate
+            && SkinnedMeshRendererCount > 0
+            && SkeletonTransformCount >= 20
+            && GameplayColliderCount == 0
+            && RigidbodyCount == 0;
         public bool RequiresRiggingBeforeAnimation => RigReadiness != PrototypeAvatarRigReadiness.HumanoidRig
             || SkinnedMeshRendererCount == 0
             || !HasAnimator;
 
         public override string ToString()
         {
-            var readiness = RuntimeReadiness == PrototypeAvatarRuntimeReadiness.StaticPlayablePlaceholder
-                ? "playable static placeholder"
-                : RuntimeReadiness.ToString();
-            return $"{PrefabName}: {readiness}, renderers={RendererCount}, skinned={SkinnedMeshRendererCount}, colliders={GameplayColliderCount}, rigidbodies={RigidbodyCount}, height={EstimatedHeightMeters:0.00}m.";
+            var readiness = RuntimeReadiness switch
+            {
+                PrototypeAvatarRuntimeReadiness.StaticPlayablePlaceholder => "playable static placeholder",
+                PrototypeAvatarRuntimeReadiness.SkinnedRigCandidate => "skinned rig candidate",
+                _ => RuntimeReadiness.ToString()
+            };
+            return $"{PrefabName}: {readiness}, renderers={RendererCount}, skinned={SkinnedMeshRendererCount}, skeletonTransforms={SkeletonTransformCount}, colliders={GameplayColliderCount}, rigidbodies={RigidbodyCount}, height={EstimatedHeightMeters:0.00}m.";
         }
     }
 
@@ -69,6 +80,7 @@ namespace ValleDePlata.Prototype
                     0,
                     0,
                     0,
+                    0,
                     false,
                     false,
                     0f);
@@ -82,6 +94,7 @@ namespace ValleDePlata.Prototype
             var renderers = root != null ? root.GetComponentsInChildren<Renderer>(true) : System.Array.Empty<Renderer>();
             var colliders = root != null ? root.GetComponentsInChildren<Collider>(true) : System.Array.Empty<Collider>();
             var rigidbodies = root != null ? root.GetComponentsInChildren<Rigidbody>(true) : System.Array.Empty<Rigidbody>();
+            var transforms = root != null ? root.GetComponentsInChildren<Transform>(true) : System.Array.Empty<Transform>();
             var hasAnimator = root != null && root.GetComponentInChildren<Animator>(true) != null;
             var skinnedMeshRendererCount = 0;
             foreach (var renderer in renderers)
@@ -107,6 +120,7 @@ namespace ValleDePlata.Prototype
                 definition != null ? definition.RigReadiness : PrototypeAvatarRigReadiness.UnriggedStaticMesh,
                 renderers.Length,
                 skinnedMeshRendererCount,
+                transforms.Length,
                 gameplayColliderCount,
                 rigidbodies.Length,
                 hasAnimator,

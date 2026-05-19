@@ -287,6 +287,8 @@ namespace ValleDePlata.Tests
             Assert.That(avatarView, Is.Not.Null);
             Assert.That(avatarView.AvatarDefinition, Is.Not.Null);
             Assert.That(avatarView.FullBodyRoot, Is.Not.Null);
+            Assert.That(avatarView.FullBodyRoot.name, Is.EqualTo("PabloValera_V2 Visual Mesh"));
+            Assert.That(avatarView.FullBodyRoot.GetComponentsInChildren<SkinnedMeshRenderer>(true).Length, Is.GreaterThan(0));
 
             var validate = typeof(PrototypeAvatarView).GetMethod("ValidateRuntimeVisual", BindingFlags.Public | BindingFlags.Instance);
             Assert.That(validate, Is.Not.Null, "Avatar view needs a runtime validation method before we build more character systems on it.");
@@ -297,6 +299,12 @@ namespace ValleDePlata.Tests
             Assert.That(heightMethod, Is.Not.Null, "Avatar view should expose visual height so generated characters can be fit against the motor capsule.");
             var visualHeight = (float)heightMethod.Invoke(avatarView, null);
             Assert.That(visualHeight, Is.InRange(1.35f, 2.25f));
+
+            var report = avatarView.BuildReadinessReport();
+            var isSkinnedCandidate = report.GetType().GetProperty("IsSkinnedRigCandidate");
+            Assert.That(isSkinnedCandidate, Is.Not.Null, "Readiness report should distinguish skinned candidates from static placeholders.");
+            Assert.That((bool)isSkinnedCandidate!.GetValue(report), Is.True);
+            Assert.That(report.RequiresRiggingBeforeAnimation, Is.True, "Pablo V2 has skin/skeleton but no animation-ready Humanoid/Animator contract yet.");
 
             player.EnterVehicle(vehicle);
             yield return null;

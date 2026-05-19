@@ -14,7 +14,8 @@ namespace ValleDePlata.Editor
         private const string SettingsFolder = "Assets/Settings";
         private const string SliceDefinitionPath = "Assets/Settings/Phase1SliceDefinition.asset";
         private const string AvatarDefinitionPath = "Assets/Settings/PabloPrototypeAvatar.asset";
-        private const string PlayerVisualPrefabPath = "Assets/Models/Characters/MaleCrimeDrama.prefab";
+        private const string PlayerVisualPrefabPath = "Assets/Models/Characters/PabloValera_V2/PabloValera_V2.prefab";
+        private const string LegacyPlayerVisualPrefabPath = "Assets/Models/Characters/MaleCrimeDrama.prefab";
 
         [MenuItem("Valle de Plata/Build Phase 1 Feel Prototype Scene")]
         public static void BuildPhase1Scene()
@@ -94,9 +95,11 @@ namespace ValleDePlata.Editor
                 avatarView = visualRoot.gameObject.AddComponent<PrototypeAvatarView>();
             }
 
-            var fullBodyRoot = visualRoot.Find("MaleCrimeDrama Visual Mesh");
+            var desiredFullBodyName = avatarDefinition != null ? avatarDefinition.FullBodyInstanceName : "Pablo Avatar Visual Mesh";
+            var fullBodyRoot = visualRoot.Find(desiredFullBodyName);
             if (fullBodyRoot == null)
             {
+                ClearGeneratedAvatarChildren(visualRoot);
                 var prefab = avatarDefinition != null && avatarDefinition.FullBodyPrefab != null
                     ? avatarDefinition.FullBodyPrefab
                     : AssetDatabase.LoadAssetAtPath<GameObject>(PlayerVisualPrefabPath);
@@ -105,7 +108,7 @@ namespace ValleDePlata.Editor
                     var instance = PrefabUtility.InstantiatePrefab(prefab, visualRoot) as GameObject;
                     if (instance != null)
                     {
-                        instance.name = "MaleCrimeDrama Visual Mesh";
+                        instance.name = desiredFullBodyName;
                         fullBodyRoot = instance.transform;
                     }
                 }
@@ -553,7 +556,7 @@ namespace ValleDePlata.Editor
                 var instance = PrefabUtility.InstantiatePrefab(prefab) as GameObject;
                 if (instance != null)
                 {
-                    instance.name = "MaleCrimeDrama Visual Mesh";
+                    instance.name = avatarDefinition != null ? avatarDefinition.FullBodyInstanceName : "Pablo Avatar Visual Mesh";
                     instance.transform.SetParent(visualRoot);
                     if (avatarDefinition != null)
                     {
@@ -871,20 +874,59 @@ namespace ValleDePlata.Editor
         private static PrototypeAvatarDefinition EnsureAvatarDefinition()
         {
             var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PlayerVisualPrefabPath);
+            if (prefab == null)
+            {
+                prefab = AssetDatabase.LoadAssetAtPath<GameObject>(LegacyPlayerVisualPrefabPath);
+            }
+
             var definition = AssetDatabase.LoadAssetAtPath<PrototypeAvatarDefinition>(AvatarDefinitionPath);
             if (definition == null)
             {
                 definition = ScriptableObject.CreateInstance<PrototypeAvatarDefinition>();
-                definition.ConfigurePrototypePlaceholder(prefab);
+                ConfigureAvatarDefinition(definition, prefab);
                 AssetDatabase.CreateAsset(definition, AvatarDefinitionPath);
+            }
+            else if (prefab != null && definition.FullBodyPrefab != prefab)
+            {
+                ConfigureAvatarDefinition(definition, prefab);
+                EditorUtility.SetDirty(definition);
             }
             else if (!definition.Validate(out _) && prefab != null)
             {
-                definition.ConfigurePrototypePlaceholder(prefab);
+                ConfigureAvatarDefinition(definition, prefab);
                 EditorUtility.SetDirty(definition);
             }
 
             return definition;
+        }
+
+        private static void ConfigureAvatarDefinition(PrototypeAvatarDefinition definition, GameObject prefab)
+        {
+            if (definition == null)
+            {
+                return;
+            }
+
+            if (prefab != null && prefab.GetComponentsInChildren<SkinnedMeshRenderer>(true).Length > 0)
+            {
+                definition.ConfigureSkinnedRigCandidate(prefab);
+                return;
+            }
+
+            definition.ConfigurePrototypePlaceholder(prefab);
+        }
+
+        private static void ClearGeneratedAvatarChildren(Transform visualRoot)
+        {
+            if (visualRoot == null)
+            {
+                return;
+            }
+
+            for (var index = visualRoot.childCount - 1; index >= 0; index--)
+            {
+                Object.DestroyImmediate(visualRoot.GetChild(index).gameObject);
+            }
         }
     }
 }
