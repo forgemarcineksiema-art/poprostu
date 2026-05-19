@@ -52,6 +52,14 @@ namespace ValleDePlata.Prototype
         RejectPlayableAvatar
     }
 
+    public enum PrototypeAvatarVisualAcceptance
+    {
+        Unreviewed,
+        TechnicalPipelineOnly,
+        GameplayCandidate,
+        FinalIdentityAccepted
+    }
+
     [CreateAssetMenu(fileName = "PrototypeAvatarDefinition", menuName = "Valle de Plata/Prototype Avatar Definition")]
     public sealed class PrototypeAvatarDefinition : ScriptableObject
     {
@@ -62,6 +70,7 @@ namespace ValleDePlata.Prototype
         [SerializeField] private PrototypeAvatarRigReadiness rigReadiness = PrototypeAvatarRigReadiness.UnriggedStaticMesh;
         [SerializeField] private PrototypeAvatarAnimationReadiness animationReadiness = PrototypeAvatarAnimationReadiness.None;
         [SerializeField] private PrototypeAvatarRigDecision rigDecision = PrototypeAvatarRigDecision.Undecided;
+        [SerializeField] private PrototypeAvatarVisualAcceptance visualAcceptance = PrototypeAvatarVisualAcceptance.Unreviewed;
         [SerializeField] private bool isFinalIdentityLocked;
         [SerializeField] private bool supportsRuntimeCustomization;
         [SerializeField] private PrototypeAvatarSlot[] plannedCustomizationSlots =
@@ -98,7 +107,10 @@ namespace ValleDePlata.Prototype
         public PrototypeAvatarRigReadiness RigReadiness => rigReadiness;
         public PrototypeAvatarAnimationReadiness AnimationReadiness => animationReadiness;
         public PrototypeAvatarRigDecision RigDecision => rigDecision;
+        public PrototypeAvatarVisualAcceptance VisualAcceptance => visualAcceptance;
         public bool IsFinalIdentityLocked => isFinalIdentityLocked;
+        public bool RequiresPlayableVisualReplacement => visualAcceptance == PrototypeAvatarVisualAcceptance.TechnicalPipelineOnly
+            || rigDecision == PrototypeAvatarRigDecision.RejectPlayableAvatar;
         public bool SupportsRuntimeCustomization => supportsRuntimeCustomization;
         public PrototypeAvatarSlot[] PlannedCustomizationSlots => plannedCustomizationSlots;
         public GameObject FullBodyPrefab => fullBodyPrefab;
@@ -120,6 +132,7 @@ namespace ValleDePlata.Prototype
             rigReadiness = PrototypeAvatarRigReadiness.UnriggedStaticMesh;
             animationReadiness = PrototypeAvatarAnimationReadiness.None;
             rigDecision = PrototypeAvatarRigDecision.Undecided;
+            visualAcceptance = PrototypeAvatarVisualAcceptance.TechnicalPipelineOnly;
             isFinalIdentityLocked = false;
             supportsRuntimeCustomization = false;
             plannedCustomizationSlots = new[]
@@ -159,6 +172,7 @@ namespace ValleDePlata.Prototype
             rigReadiness = PrototypeAvatarRigReadiness.GenericRig;
             animationReadiness = PrototypeAvatarAnimationReadiness.GenericPlaceholderController;
             rigDecision = PrototypeAvatarRigDecision.KeepVisualRequestHumanoidSource;
+            visualAcceptance = PrototypeAvatarVisualAcceptance.TechnicalPipelineOnly;
             isFinalIdentityLocked = false;
             supportsRuntimeCustomization = false;
             plannedCustomizationSlots = new[]
@@ -198,6 +212,7 @@ namespace ValleDePlata.Prototype
             rigReadiness = PrototypeAvatarRigReadiness.HumanoidRig;
             animationReadiness = PrototypeAvatarAnimationReadiness.RuntimeLocomotionDriven;
             rigDecision = PrototypeAvatarRigDecision.ReadyForHumanoidLocomotion;
+            visualAcceptance = PrototypeAvatarVisualAcceptance.TechnicalPipelineOnly;
             isFinalIdentityLocked = false;
             supportsRuntimeCustomization = false;
             plannedCustomizationSlots = new[]
@@ -225,7 +240,7 @@ namespace ValleDePlata.Prototype
             minimumRuntimeHeightMeters = 1.35f;
             maximumRuntimeHeightMeters = 2.25f;
             hideVisualWhileDriving = true;
-            authoringNotes = "Unity AI Humanoid candidate is the active runtime Humanoid visual. The game owns its Animator bridge and Pablo remains exchangeable until final identity/customization work.";
+            authoringNotes = "Unity AI Humanoid candidate remains technical pipeline only: rig/runtime wiring is useful, but visual QA rejected it as Pablo's playable identity because the in-game silhouette, head, shoulders, arms, and legs are not acceptable.";
         }
 
         public bool Validate(out string error)
@@ -285,6 +300,12 @@ namespace ValleDePlata.Prototype
                 return false;
             }
 
+            if (isFinalIdentityLocked && visualAcceptance != PrototypeAvatarVisualAcceptance.FinalIdentityAccepted)
+            {
+                error = "Final identity cannot be locked until visual QA accepts the avatar.";
+                return false;
+            }
+
             error = string.Empty;
             return true;
         }
@@ -301,7 +322,10 @@ namespace ValleDePlata.Prototype
 
             if (runtimeReadiness == PrototypeAvatarRuntimeReadiness.RiggedHumanoidReady)
             {
-                return $"{displayName} is a runtime Humanoid candidate using {fullBodyPrefab?.name ?? "no prefab"}; the Animator bridge is game-owned, rig decision is {rigDecision}, and the model remains exchangeable with {customizationState}.";
+                var visualState = RequiresPlayableVisualReplacement
+                    ? "visual QA rejected it as Pablo's playable identity; use it as technical pipeline only"
+                    : $"visual acceptance is {visualAcceptance}";
+                return $"{displayName} is a runtime Humanoid candidate using {fullBodyPrefab?.name ?? "no prefab"}; the Animator bridge is game-owned, rig decision is {rigDecision}, {visualState}, and the model remains exchangeable with {customizationState}.";
             }
 
             return $"{displayName} is a static full-body placeholder using {fullBodyPrefab?.name ?? "no prefab"}; next model pass needs a rigged humanoid before animation and {customizationState}.";

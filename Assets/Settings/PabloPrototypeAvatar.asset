@@ -19,6 +19,7 @@ MonoBehaviour:
   rigReadiness: 2
   animationReadiness: 2
   rigDecision: 2
+  visualAcceptance: 1
   isFinalIdentityLocked: 0
   supportsRuntimeCustomization: 0
   plannedCustomizationSlots: 0100000002000000030000000400000005000000060000000700000008000000
@@ -35,6 +36,7 @@ MonoBehaviour:
   minimumRuntimeHeightMeters: 1.35
   maximumRuntimeHeightMeters: 2.25
   hideVisualWhileDriving: 1
-  authoringNotes: Unity AI Humanoid candidate is the active runtime Humanoid visual.
-    The game owns its Animator bridge and Pablo remains exchangeable until final
-    identity/customization work.
+  authoringNotes: 'Unity AI Humanoid candidate remains technical pipeline only:
+    rig/runtime wiring is useful, but visual QA rejected it as Pablo''s playable
+    identity because the in-game silhouette, head, shoulders, arms, and legs are
+    not acceptable.'

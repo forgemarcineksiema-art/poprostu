@@ -24,6 +24,7 @@ namespace ValleDePlata.Tests
         private const string PabloHumanoidRuntimeAnimatorPath = "Assets/Models/Characters/PabloValera_HumanoidCandidate/Animations/PabloValera_Humanoid_Runtime.controller";
         private const string PabloHumanoidLowerBodyMaskPath = "Assets/Models/Characters/PabloValera_HumanoidCandidate/Animations/PabloValera_LocomotionLowerBody.mask";
         private const string PabloAvatarPass05ReportPath = "docs/prototype_reports/character_avatar_pass_0_5.md";
+        private const string PabloVisualAcceptanceGateReportPath = "docs/prototype_reports/character_visual_acceptance_gate_2026-05-19.md";
 
         private static readonly string[] PabloRuntimeLocomotionStates =
         {
@@ -290,6 +291,41 @@ namespace ValleDePlata.Tests
             Assert.That(summary, Does.Contain("runtime Humanoid"));
             Assert.That(summary, Does.Contain("Animator bridge"));
             Assert.That(summary, Does.Contain("customization slots"));
+        }
+
+        [Test]
+        public void PabloAvatarDefinitionSeparatesTechnicalReadinessFromVisualAcceptance()
+        {
+            var definition = AssetDatabase.LoadAssetAtPath<ScriptableObject>("Assets/Settings/PabloPrototypeAvatar.asset");
+            Assert.That(definition, Is.Not.Null);
+
+            var serialized = new SerializedObject(definition);
+            var visualAcceptance = serialized.FindProperty("visualAcceptance");
+            Assert.That(visualAcceptance, Is.Not.Null, "Avatar definition must track visual acceptance separately from rig/runtime readiness.");
+            Assert.That(visualAcceptance.enumDisplayNames[visualAcceptance.enumValueIndex], Is.EqualTo("Technical Pipeline Only"));
+
+            var replacementProperty = definition.GetType().GetProperty("RequiresPlayableVisualReplacement", BindingFlags.Public | BindingFlags.Instance);
+            Assert.That(replacementProperty, Is.Not.Null, "Runtime systems need a hard signal that the current Humanoid asset is not accepted as Pablo's playable identity.");
+            Assert.That((bool)replacementProperty!.GetValue(definition), Is.True);
+
+            var summaryMethod = definition.GetType().GetMethod("BuildAuthoringSummary", BindingFlags.Public | BindingFlags.Instance);
+            Assert.That(summaryMethod, Is.Not.Null);
+            var summary = summaryMethod!.Invoke(definition, null) as string;
+            Assert.That(summary, Does.Contain("visual QA rejected"));
+            Assert.That(summary, Does.Contain("technical pipeline only"));
+        }
+
+        [Test]
+        public void PabloVisualAcceptanceGateDocumentsCurrentFailureAndNextModelBar()
+        {
+            Assert.That(File.Exists(PabloVisualAcceptanceGateReportPath), Is.True, "The project needs a persistent visual QA gate before accepting another Unity AI character candidate.");
+            var report = File.ReadAllText(PabloVisualAcceptanceGateReportPath);
+            Assert.That(report, Does.Contain("Current verdict: Rejected for playable Pablo identity"));
+            Assert.That(report, Does.Contain("Technical pipeline only"));
+            Assert.That(report, Does.Contain("front / side / back / gameplay camera"));
+            Assert.That(report, Does.Contain("head not sunk into the jacket"));
+            Assert.That(report, Does.Contain("arms visible and naturally separated from torso"));
+            Assert.That(report, Does.Contain("legs and feet readable in third-person camera"));
         }
 
         [Test]
