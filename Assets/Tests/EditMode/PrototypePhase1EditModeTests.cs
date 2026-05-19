@@ -22,6 +22,7 @@ namespace ValleDePlata.Tests
         private const string PabloHumanoidCandidateAvatarPath = "Assets/Models/Characters/PabloValera_HumanoidCandidate/PabloValera_HumanoidAvatar.asset";
         private const string PabloHumanoidCandidateAnimationsPath = "Assets/Models/Characters/PabloValera_HumanoidCandidate/Animations";
         private const string PabloHumanoidRuntimeAnimatorPath = "Assets/Models/Characters/PabloValera_HumanoidCandidate/Animations/PabloValera_Humanoid_Runtime.controller";
+        private const string PabloHumanoidLowerBodyMaskPath = "Assets/Models/Characters/PabloValera_HumanoidCandidate/Animations/PabloValera_LocomotionLowerBody.mask";
         private const string PabloAvatarPass05ReportPath = "docs/prototype_reports/character_avatar_pass_0_5.md";
 
         private static readonly string[] ValleDePlataStreetKitStructuralPrefabs =
@@ -287,6 +288,26 @@ namespace ValleDePlata.Tests
                 Assert.That(clip!.name, Is.EqualTo(state.name));
                 Assert.That(AnimationUtility.GetCurveBindings(clip).Length, Is.GreaterThan(0), $"{clip.name} must contain real animation curves.");
             }
+        }
+
+        [Test]
+        public void PabloHumanoidRuntimeAnimatorMasksUnapprovedUpperBodySourceMotion()
+        {
+            var controller = AssetDatabase.LoadAssetAtPath<AnimatorController>(PabloHumanoidRuntimeAnimatorPath);
+            var mask = AssetDatabase.LoadAssetAtPath<AvatarMask>(PabloHumanoidLowerBodyMaskPath);
+            Assert.That(controller, Is.Not.Null);
+            Assert.That(mask, Is.Not.Null, "Runtime locomotion should quarantine AI-generated upper-body motion until visual QA accepts it.");
+
+            var layer = controller.layers[0];
+            Assert.That(layer.avatarMask, Is.EqualTo(mask), "Pablo runtime locomotion must use the lower-body safety mask.");
+            Assert.That(mask.GetHumanoidBodyPartActive(AvatarMaskBodyPart.LeftLeg), Is.True);
+            Assert.That(mask.GetHumanoidBodyPartActive(AvatarMaskBodyPart.RightLeg), Is.True);
+            Assert.That(mask.GetHumanoidBodyPartActive(AvatarMaskBodyPart.Body), Is.True);
+            Assert.That(mask.GetHumanoidBodyPartActive(AvatarMaskBodyPart.LeftArm), Is.False);
+            Assert.That(mask.GetHumanoidBodyPartActive(AvatarMaskBodyPart.RightArm), Is.False);
+            Assert.That(mask.GetHumanoidBodyPartActive(AvatarMaskBodyPart.LeftFingers), Is.False);
+            Assert.That(mask.GetHumanoidBodyPartActive(AvatarMaskBodyPart.RightFingers), Is.False);
+            Assert.That(mask.GetHumanoidBodyPartActive(AvatarMaskBodyPart.Head), Is.False);
         }
 
         [Test]

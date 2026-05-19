@@ -19,6 +19,7 @@ namespace ValleDePlata.Editor
         private const string PreviousPlayerVisualPrefabPath = "Assets/Models/Characters/PabloValera_V2/PabloValera_V2.prefab";
         private const string LegacyPlayerVisualPrefabPath = "Assets/Models/Characters/MaleCrimeDrama.prefab";
         private const string HumanoidRuntimeAnimatorControllerPath = "Assets/Models/Characters/PabloValera_HumanoidCandidate/Animations/PabloValera_Humanoid_Runtime.controller";
+        private const string HumanoidLowerBodyMaskPath = "Assets/Models/Characters/PabloValera_HumanoidCandidate/Animations/PabloValera_LocomotionLowerBody.mask";
         private const string HumanoidAnimationsPath = "Assets/Models/Characters/PabloValera_HumanoidCandidate/Animations";
 
         [MenuItem("Valle de Plata/Build Phase 1 Feel Prototype Scene")]
@@ -956,19 +957,42 @@ namespace ValleDePlata.Editor
                 return null;
             }
 
+            var locomotionMask = EnsureHumanoidLowerBodyMask();
             var controller = AssetDatabase.LoadAssetAtPath<AnimatorController>(HumanoidRuntimeAnimatorControllerPath);
             if (controller == null)
             {
                 controller = AnimatorController.CreateAnimatorControllerAtPath(HumanoidRuntimeAnimatorControllerPath);
             }
 
-            ConfigureHumanoidRuntimeAnimatorController(controller);
+            ConfigureHumanoidRuntimeAnimatorController(controller, locomotionMask);
             EditorUtility.SetDirty(controller);
             AssetDatabase.SaveAssets();
             return controller;
         }
 
-        private static void ConfigureHumanoidRuntimeAnimatorController(AnimatorController controller)
+        private static AvatarMask EnsureHumanoidLowerBodyMask()
+        {
+            var mask = AssetDatabase.LoadAssetAtPath<AvatarMask>(HumanoidLowerBodyMaskPath);
+            if (mask == null)
+            {
+                mask = new AvatarMask();
+                AssetDatabase.CreateAsset(mask, HumanoidLowerBodyMaskPath);
+            }
+
+            mask.SetHumanoidBodyPartActive(AvatarMaskBodyPart.Root, true);
+            mask.SetHumanoidBodyPartActive(AvatarMaskBodyPart.Body, true);
+            mask.SetHumanoidBodyPartActive(AvatarMaskBodyPart.LeftLeg, true);
+            mask.SetHumanoidBodyPartActive(AvatarMaskBodyPart.RightLeg, true);
+            mask.SetHumanoidBodyPartActive(AvatarMaskBodyPart.Head, false);
+            mask.SetHumanoidBodyPartActive(AvatarMaskBodyPart.LeftArm, false);
+            mask.SetHumanoidBodyPartActive(AvatarMaskBodyPart.RightArm, false);
+            mask.SetHumanoidBodyPartActive(AvatarMaskBodyPart.LeftFingers, false);
+            mask.SetHumanoidBodyPartActive(AvatarMaskBodyPart.RightFingers, false);
+            EditorUtility.SetDirty(mask);
+            return mask;
+        }
+
+        private static void ConfigureHumanoidRuntimeAnimatorController(AnimatorController controller, AvatarMask locomotionMask)
         {
             if (controller == null)
             {
@@ -978,6 +1002,10 @@ namespace ValleDePlata.Editor
             EnsureAnimatorParameter(controller, "Speed", AnimatorControllerParameterType.Float);
             EnsureAnimatorParameter(controller, "IsSprinting", AnimatorControllerParameterType.Bool);
             EnsureAnimatorParameter(controller, "Grounded", AnimatorControllerParameterType.Bool);
+
+            var layers = controller.layers;
+            layers[0].avatarMask = locomotionMask;
+            controller.layers = layers;
 
             var stateMachine = controller.layers[0].stateMachine;
             foreach (var childState in stateMachine.states)
