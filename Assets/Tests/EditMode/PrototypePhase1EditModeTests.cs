@@ -25,6 +25,29 @@ namespace ValleDePlata.Tests
         private const string PabloHumanoidLowerBodyMaskPath = "Assets/Models/Characters/PabloValera_HumanoidCandidate/Animations/PabloValera_LocomotionLowerBody.mask";
         private const string PabloAvatarPass05ReportPath = "docs/prototype_reports/character_avatar_pass_0_5.md";
 
+        private static readonly string[] PabloRuntimeLocomotionStates =
+        {
+            "Idle",
+            "Walk",
+            "Run",
+            "Sprint"
+        };
+
+        private static readonly string[] PabloUpperBodyCurveFragments =
+        {
+            "Spine",
+            "Chest",
+            "UpperChest",
+            "Neck",
+            "Head",
+            "Eye",
+            "Jaw",
+            "Shoulder",
+            "Arm",
+            "Forearm",
+            "Hand"
+        };
+
         private static readonly string[] ValleDePlataStreetKitStructuralPrefabs =
         {
             "VDP_Corner_Alley_01",
@@ -284,8 +307,8 @@ namespace ValleDePlata.Tests
             foreach (var state in states)
             {
                 var clip = state.motion as AnimationClip;
-                Assert.That(clip, Is.Not.Null, $"{state.name} should use the real Humanoid source clip.");
-                Assert.That(clip!.name, Is.EqualTo(state.name));
+                Assert.That(clip, Is.Not.Null, $"{state.name} should use a runtime-owned Humanoid locomotion clip.");
+                Assert.That(clip!.name, Is.EqualTo($"PabloValera_Runtime_{state.name}"));
                 Assert.That(AnimationUtility.GetCurveBindings(clip).Length, Is.GreaterThan(0), $"{clip.name} must contain real animation curves.");
             }
         }
@@ -308,6 +331,27 @@ namespace ValleDePlata.Tests
             Assert.That(mask.GetHumanoidBodyPartActive(AvatarMaskBodyPart.LeftFingers), Is.False);
             Assert.That(mask.GetHumanoidBodyPartActive(AvatarMaskBodyPart.RightFingers), Is.False);
             Assert.That(mask.GetHumanoidBodyPartActive(AvatarMaskBodyPart.Head), Is.False);
+        }
+
+        [Test]
+        public void PabloHumanoidRuntimeAnimatorUsesUpperBodySanitizedClips()
+        {
+            var controller = AssetDatabase.LoadAssetAtPath<AnimatorController>(PabloHumanoidRuntimeAnimatorPath);
+            Assert.That(controller, Is.Not.Null);
+
+            var states = controller.layers[0].stateMachine.states.Select(state => state.state).ToArray();
+            foreach (var stateName in PabloRuntimeLocomotionStates)
+            {
+                var state = states.FirstOrDefault(candidate => candidate.name == stateName);
+                Assert.That(state, Is.Not.Null, $"Missing runtime locomotion state {stateName}.");
+
+                var clip = state.motion as AnimationClip;
+                Assert.That(clip, Is.Not.Null, $"{stateName} needs a runtime-owned clip, not a null state.");
+                var clipPath = AssetDatabase.GetAssetPath(clip);
+                Assert.That(clipPath, Does.EndWith($"PabloValera_Runtime_{stateName}.anim"), $"{stateName} must not bind directly to the Unity AI full-body source clip.");
+                Assert.That(AnimationUtility.GetCurveBindings(clip).Any(IsPabloUpperBodyCurve), Is.False, $"{clip.name} still contains upper-body curves that pull Pablo's arms/head into the broken pose.");
+                Assert.That(AnimationUtility.GetCurveBindings(clip).Any(binding => binding.propertyName.Contains("Leg") || binding.propertyName.Contains("Foot")), Is.True, $"{clip.name} should keep lower-body locomotion curves.");
+            }
         }
 
         [Test]
@@ -456,9 +500,10 @@ namespace ValleDePlata.Tests
             var clips = clipGuids
                 .Select(guid => AssetDatabase.LoadAssetAtPath<AnimationClip>(AssetDatabase.GUIDToAssetPath(guid)))
                 .Where(clip => clip != null)
+                .Where(clip => PabloRuntimeLocomotionStates.Contains(clip!.name))
                 .ToArray();
 
-            CollectionAssert.AreEquivalent(new[] { "Idle", "Walk", "Run", "Sprint" }, clips.Select(clip => clip.name));
+            CollectionAssert.AreEquivalent(PabloRuntimeLocomotionStates, clips.Select(clip => clip.name));
             foreach (var clip in clips)
             {
                 Assert.That(clip!.legacy, Is.False, $"{clip.name} must be a Mecanim clip.");
@@ -1436,6 +1481,11 @@ namespace ValleDePlata.Tests
             var parameter = controller.parameters.FirstOrDefault(parameter => parameter.name == name);
             Assert.That(parameter, Is.Not.Null, $"Animator parameter {name} is missing.");
             Assert.That(parameter.type, Is.EqualTo(type), $"Animator parameter {name} has the wrong type.");
+        }
+
+        private static bool IsPabloUpperBodyCurve(EditorCurveBinding binding)
+        {
+            return PabloUpperBodyCurveFragments.Any(fragment => binding.propertyName.Contains(fragment));
         }
 
         private static GameObject RequireNonBlockingDressing(string objectName)

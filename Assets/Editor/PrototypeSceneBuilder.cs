@@ -22,6 +22,21 @@ namespace ValleDePlata.Editor
         private const string HumanoidLowerBodyMaskPath = "Assets/Models/Characters/PabloValera_HumanoidCandidate/Animations/PabloValera_LocomotionLowerBody.mask";
         private const string HumanoidAnimationsPath = "Assets/Models/Characters/PabloValera_HumanoidCandidate/Animations";
 
+        private static readonly string[] HumanoidUpperBodyCurveFragments =
+        {
+            "Spine",
+            "Chest",
+            "UpperChest",
+            "Neck",
+            "Head",
+            "Eye",
+            "Jaw",
+            "Shoulder",
+            "Arm",
+            "Forearm",
+            "Hand"
+        };
+
         [MenuItem("Valle de Plata/Build Phase 1 Feel Prototype Scene")]
         public static void BuildPhase1Scene()
         {
@@ -1055,9 +1070,65 @@ namespace ValleDePlata.Editor
         private static AnimatorState AddClipState(AnimatorStateMachine stateMachine, string stateName, Vector3 position)
         {
             var state = stateMachine.AddState(stateName, position);
-            state.motion = AssetDatabase.LoadAssetAtPath<AnimationClip>($"{HumanoidAnimationsPath}/{stateName}.anim");
+            state.motion = EnsureRuntimeLocomotionClip(stateName);
             state.writeDefaultValues = true;
             return state;
+        }
+
+        private static AnimationClip EnsureRuntimeLocomotionClip(string stateName)
+        {
+            var sourcePath = $"{HumanoidAnimationsPath}/{stateName}.anim";
+            var runtimePath = $"{HumanoidAnimationsPath}/PabloValera_Runtime_{stateName}.anim";
+            var sourceClip = AssetDatabase.LoadAssetAtPath<AnimationClip>(sourcePath);
+            if (sourceClip == null)
+            {
+                return null;
+            }
+
+            var runtimeClip = AssetDatabase.LoadAssetAtPath<AnimationClip>(runtimePath);
+            if (runtimeClip == null)
+            {
+                runtimeClip = Object.Instantiate(sourceClip);
+                runtimeClip.name = $"PabloValera_Runtime_{stateName}";
+                AssetDatabase.CreateAsset(runtimeClip, runtimePath);
+            }
+            else
+            {
+                EditorUtility.CopySerialized(sourceClip, runtimeClip);
+                runtimeClip.name = $"PabloValera_Runtime_{stateName}";
+            }
+
+            foreach (var binding in AnimationUtility.GetCurveBindings(runtimeClip))
+            {
+                if (IsHumanoidUpperBodyCurve(binding))
+                {
+                    AnimationUtility.SetEditorCurve(runtimeClip, binding, null);
+                }
+            }
+
+            foreach (var binding in AnimationUtility.GetObjectReferenceCurveBindings(runtimeClip))
+            {
+                if (IsHumanoidUpperBodyCurve(binding))
+                {
+                    AnimationUtility.SetObjectReferenceCurve(runtimeClip, binding, null);
+                }
+            }
+
+            EditorUtility.SetDirty(runtimeClip);
+            return runtimeClip;
+        }
+
+        private static bool IsHumanoidUpperBodyCurve(EditorCurveBinding binding)
+        {
+            foreach (var fragment in HumanoidUpperBodyCurveFragments)
+            {
+                if (binding.propertyName.Contains(fragment))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static void AddFloatTransition(
