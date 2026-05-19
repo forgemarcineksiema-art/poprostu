@@ -13,6 +13,7 @@ namespace ValleDePlata.Prototype
     public sealed class PrototypeCharacterPresentation : MonoBehaviour
     {
         [SerializeField] private Transform visualRoot;
+        [SerializeField] private PrototypeAvatarView avatarView;
         [SerializeField] private float walkThreshold = 0.15f;
         [SerializeField] private float sprintSpeedRatio = 0.78f;
         [SerializeField] private float bobAmplitude = 0.025f;
@@ -25,10 +26,12 @@ namespace ValleDePlata.Prototype
         private float locomotionClock;
 
         public Transform VisualRoot => visualRoot;
+        public PrototypeAvatarView AvatarView => avatarView;
         public PrototypeCharacterLocomotionState CurrentState { get; private set; } = PrototypeCharacterLocomotionState.Idle;
 
         private void Awake()
         {
+            CacheAvatarView();
             CacheBasePose();
             EnsureVisualDoesNotCollide();
         }
@@ -36,13 +39,27 @@ namespace ValleDePlata.Prototype
         public void AttachVisual(Transform visual)
         {
             visualRoot = visual;
+            CacheAvatarView();
+            CacheBasePose();
+            EnsureVisualDoesNotCollide();
+        }
+
+        public void AttachAvatar(PrototypeAvatarView avatar)
+        {
+            avatarView = avatar;
+            visualRoot = avatar != null ? avatar.transform : null;
+            avatarView?.ApplyDefinition();
             CacheBasePose();
             EnsureVisualDoesNotCollide();
         }
 
         public void SetVisible(bool visible)
         {
-            if (visualRoot != null)
+            if (avatarView != null)
+            {
+                avatarView.SetVisible(visible);
+            }
+            else if (visualRoot != null)
             {
                 visualRoot.gameObject.SetActive(visible);
             }
@@ -128,9 +145,23 @@ namespace ValleDePlata.Prototype
                 return;
             }
 
+            avatarView?.EnsureNonGameplayVisual();
             foreach (var collider in visualRoot.GetComponentsInChildren<Collider>(true))
             {
                 collider.enabled = false;
+            }
+        }
+
+        private void CacheAvatarView()
+        {
+            if (avatarView != null)
+            {
+                return;
+            }
+
+            if (visualRoot != null)
+            {
+                avatarView = visualRoot.GetComponent<PrototypeAvatarView>();
             }
         }
     }

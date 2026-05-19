@@ -136,6 +136,58 @@ namespace ValleDePlata.Tests
         }
 
         [Test]
+        public void PabloAvatarDefinitionTreatsGeneratedModelAsExchangeablePlaceholder()
+        {
+            var definitionType = System.Type.GetType("ValleDePlata.Prototype.PrototypeAvatarDefinition, ValleDePlata.Prototype");
+            Assert.That(definitionType, Is.Not.Null, "PrototypeAvatarDefinition type is missing.");
+
+            var definition = AssetDatabase.LoadAssetAtPath<ScriptableObject>("Assets/Settings/PabloPrototypeAvatar.asset");
+            Assert.That(definition, Is.Not.Null, "Pablo needs an avatar definition asset so the generated model is not hard-coded as the final character.");
+            Assert.That(definition.GetType(), Is.EqualTo(definitionType));
+
+            var serialized = new SerializedObject(definition);
+            Assert.That(serialized.FindProperty("characterId").stringValue, Is.EqualTo("pablo-valera"));
+            Assert.That(serialized.FindProperty("displayName").stringValue, Is.EqualTo("Pablo Valera"));
+            Assert.That(serialized.FindProperty("isFinalIdentityLocked").boolValue, Is.False, "Current Unity AI character is a placeholder, not final Pablo identity.");
+            Assert.That(serialized.FindProperty("fullBodyPrefab").objectReferenceValue, Is.EqualTo(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Models/Characters/MaleCrimeDrama.prefab")));
+            Assert.That(serialized.FindProperty("fullBodyLocalScale").floatValue, Is.EqualTo(1.75f).Within(0.001f));
+
+            var validate = definitionType.GetMethod("Validate", BindingFlags.Public | BindingFlags.Instance);
+            Assert.That(validate, Is.Not.Null);
+            var args = new object[] { null };
+            Assert.That((bool)validate.Invoke(definition, args), Is.True, args[0] as string);
+        }
+
+        [Test]
+        public void Phase1PlayerUsesAvatarViewBackedByDefinition()
+        {
+            EditorSceneManager.OpenScene(ScenePath);
+
+            var presentation = RequireComponent<PrototypeCharacterPresentation>("Pablo Valera Prototype Controller");
+            var visual = RequireObject("Pablo Character Visual");
+            Assert.That(HasComponentNamed(visual, "PrototypeAvatarView"), Is.True, "The player visual root needs an avatar view so the mesh can be swapped later.");
+
+            var avatarView = visual.GetComponents<MonoBehaviour>().First(component => component != null && component.GetType().Name == "PrototypeAvatarView");
+            var viewObject = new SerializedObject(avatarView);
+            var definition = viewObject.FindProperty("avatarDefinition").objectReferenceValue;
+            var fullBodyRoot = viewObject.FindProperty("fullBodyRoot").objectReferenceValue as Transform;
+
+            Assert.That(definition, Is.Not.Null);
+            Assert.That(AssetDatabase.GetAssetPath(definition), Is.EqualTo("Assets/Settings/PabloPrototypeAvatar.asset"));
+            Assert.That(fullBodyRoot, Is.Not.Null);
+            Assert.That(fullBodyRoot.name, Is.EqualTo("MaleCrimeDrama Visual Mesh"));
+            Assert.That(fullBodyRoot.localScale, Is.EqualTo(Vector3.one * 1.75f));
+
+            var presentationObject = new SerializedObject(presentation);
+            Assert.That(presentationObject.FindProperty("avatarView").objectReferenceValue, Is.EqualTo(avatarView));
+
+            foreach (var collider in visual.GetComponentsInChildren<Collider>(true))
+            {
+                Assert.That(collider.enabled == false || collider.isTrigger, Is.True, $"Avatar visual collider {collider.name} must not affect gameplay physics.");
+            }
+        }
+
+        [Test]
         public void CharacterPresentationStateTracksIdleWalkSprint()
         {
             Assert.That(PrototypeCharacterPresentation.ResolveLocomotionState(true, 0f, false, 6.4f), Is.EqualTo(PrototypeCharacterLocomotionState.Idle));

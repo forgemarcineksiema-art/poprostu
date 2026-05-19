@@ -13,6 +13,7 @@ namespace ValleDePlata.Editor
         private const string MaterialFolder = "Assets/PrototypeMaterials";
         private const string SettingsFolder = "Assets/Settings";
         private const string SliceDefinitionPath = "Assets/Settings/Phase1SliceDefinition.asset";
+        private const string AvatarDefinitionPath = "Assets/Settings/PabloPrototypeAvatar.asset";
         private const string PlayerVisualPrefabPath = "Assets/Models/Characters/MaleCrimeDrama.prefab";
 
         [MenuItem("Valle de Plata/Build Phase 1 Feel Prototype Scene")]
@@ -21,6 +22,7 @@ namespace ValleDePlata.Editor
             EnsureFolder(MaterialFolder);
             EnsureFolder(SettingsFolder);
             var sliceDefinition = EnsureSliceDefinition();
+            var avatarDefinition = EnsureAvatarDefinition();
 
             var concrete = CreateMaterial("Prototype_Concrete", new Color(0.56f, 0.54f, 0.48f));
             var asphalt = CreateMaterial("Prototype_Asphalt", new Color(0.18f, 0.18f, 0.17f));
@@ -40,7 +42,7 @@ namespace ValleDePlata.Editor
             CreateLight();
             CreatePresentationFillLight();
             CreateEnvironment(concrete, asphalt, sunBleachedWall, rust, patrolBlue, routeGreen);
-            var player = CreatePlayer();
+            var player = CreatePlayer(avatarDefinition);
             CreateVehicle();
             CreateRoute(routeGreen, sliceDefinition);
             CreateWorldState();
@@ -55,6 +57,72 @@ namespace ValleDePlata.Editor
 
             EditorSceneManager.SaveScene(scene, ScenePath);
             AddSceneToBuildSettings(ScenePath);
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+        }
+
+        [MenuItem("Valle de Plata/Apply Pablo Avatar Definition To Phase 1 Scene")]
+        public static void ApplyPabloAvatarDefinitionToPhase1Scene()
+        {
+            EnsureFolder(SettingsFolder);
+            var avatarDefinition = EnsureAvatarDefinition();
+            var scene = EditorSceneManager.OpenScene(ScenePath);
+            var player = GameObject.Find("Pablo Valera Prototype Controller");
+            if (player == null)
+            {
+                throw new System.InvalidOperationException("Missing Pablo Valera Prototype Controller in Phase 1 scene.");
+            }
+
+            var presentation = player.GetComponent<PrototypeCharacterPresentation>();
+            if (presentation == null)
+            {
+                presentation = player.AddComponent<PrototypeCharacterPresentation>();
+            }
+
+            var visualRoot = player.transform.Find("Pablo Character Visual");
+            if (visualRoot == null)
+            {
+                visualRoot = new GameObject("Pablo Character Visual").transform;
+                visualRoot.SetParent(player.transform);
+            }
+
+            avatarDefinition?.ApplyVisualRootTransform(visualRoot);
+            PrototypeLayers.SetLayerRecursively(visualRoot.gameObject, PrototypeLayers.Player);
+            var avatarView = visualRoot.GetComponent<PrototypeAvatarView>();
+            if (avatarView == null)
+            {
+                avatarView = visualRoot.gameObject.AddComponent<PrototypeAvatarView>();
+            }
+
+            var fullBodyRoot = visualRoot.Find("MaleCrimeDrama Visual Mesh");
+            if (fullBodyRoot == null)
+            {
+                var prefab = avatarDefinition != null && avatarDefinition.FullBodyPrefab != null
+                    ? avatarDefinition.FullBodyPrefab
+                    : AssetDatabase.LoadAssetAtPath<GameObject>(PlayerVisualPrefabPath);
+                if (prefab != null)
+                {
+                    var instance = PrefabUtility.InstantiatePrefab(prefab, visualRoot) as GameObject;
+                    if (instance != null)
+                    {
+                        instance.name = "MaleCrimeDrama Visual Mesh";
+                        fullBodyRoot = instance.transform;
+                    }
+                }
+            }
+
+            if (fullBodyRoot != null)
+            {
+                avatarDefinition?.ApplyFullBodyTransform(fullBodyRoot);
+                PrototypeLayers.SetLayerRecursively(fullBodyRoot.gameObject, PrototypeLayers.Player);
+            }
+
+            avatarView.Configure(avatarDefinition, fullBodyRoot);
+            presentation.AttachAvatar(avatarView);
+            EditorUtility.SetDirty(avatarView);
+            EditorUtility.SetDirty(presentation);
+            EditorSceneManager.MarkSceneDirty(scene);
+            EditorSceneManager.SaveScene(scene);
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
         }
@@ -443,7 +511,7 @@ namespace ValleDePlata.Editor
             return marker;
         }
 
-        private static PrototypePlayerController CreatePlayer()
+        private static PrototypePlayerController CreatePlayer(PrototypeAvatarDefinition avatarDefinition)
         {
             var playerObject = GameObject.CreatePrimitive(PrimitiveType.Capsule);
             playerObject.name = "Pablo Valera Prototype Controller";
@@ -463,21 +531,23 @@ namespace ValleDePlata.Editor
             pivot.SetParent(playerObject.transform);
             pivot.localPosition = new Vector3(0f, 1.45f, 0f);
             SetObjectReference(controller, "cameraPivot", pivot);
-            AttachPlayerVisual(playerObject.transform, presentation);
+            AttachPlayerVisual(playerObject.transform, presentation, avatarDefinition);
 
             return controller;
         }
 
-        private static void AttachPlayerVisual(Transform playerRoot, PrototypeCharacterPresentation presentation)
+        private static void AttachPlayerVisual(Transform playerRoot, PrototypeCharacterPresentation presentation, PrototypeAvatarDefinition avatarDefinition)
         {
             var visualRoot = new GameObject("Pablo Character Visual").transform;
             visualRoot.SetParent(playerRoot);
-            visualRoot.localPosition = new Vector3(0f, 0.88f, 0f);
-            visualRoot.localRotation = Quaternion.identity;
-            visualRoot.localScale = Vector3.one;
+            avatarDefinition?.ApplyVisualRootTransform(visualRoot);
             PrototypeLayers.SetLayerRecursively(visualRoot.gameObject, PrototypeLayers.Player);
+            var avatarView = visualRoot.gameObject.AddComponent<PrototypeAvatarView>();
 
-            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PlayerVisualPrefabPath);
+            var prefab = avatarDefinition != null && avatarDefinition.FullBodyPrefab != null
+                ? avatarDefinition.FullBodyPrefab
+                : AssetDatabase.LoadAssetAtPath<GameObject>(PlayerVisualPrefabPath);
+            Transform fullBodyRoot = null;
             if (prefab != null)
             {
                 var instance = PrefabUtility.InstantiatePrefab(prefab) as GameObject;
@@ -485,10 +555,19 @@ namespace ValleDePlata.Editor
                 {
                     instance.name = "MaleCrimeDrama Visual Mesh";
                     instance.transform.SetParent(visualRoot);
-                    instance.transform.localPosition = Vector3.zero;
-                    instance.transform.localRotation = Quaternion.identity;
-                    instance.transform.localScale = Vector3.one * 1.75f;
+                    if (avatarDefinition != null)
+                    {
+                        avatarDefinition.ApplyFullBodyTransform(instance.transform);
+                    }
+                    else
+                    {
+                        instance.transform.localPosition = Vector3.zero;
+                        instance.transform.localRotation = Quaternion.identity;
+                        instance.transform.localScale = Vector3.one * 1.75f;
+                    }
+
                     PrototypeLayers.SetLayerRecursively(instance, PrototypeLayers.Player);
+                    fullBodyRoot = instance.transform;
 
                     foreach (var collider in instance.GetComponentsInChildren<Collider>(true))
                     {
@@ -501,7 +580,8 @@ namespace ValleDePlata.Editor
                 Debug.LogWarning($"Player visual prefab missing at {PlayerVisualPrefabPath}. The controller will still work with its invisible motor root.");
             }
 
-            presentation.AttachVisual(visualRoot);
+            avatarView.Configure(avatarDefinition, fullBodyRoot);
+            presentation.AttachAvatar(avatarView);
         }
 
         private static void CreateVehicle()
@@ -782,6 +862,25 @@ namespace ValleDePlata.Editor
             else if (!definition.Validate(out _))
             {
                 definition.ConfigurePhase1Defaults();
+                EditorUtility.SetDirty(definition);
+            }
+
+            return definition;
+        }
+
+        private static PrototypeAvatarDefinition EnsureAvatarDefinition()
+        {
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PlayerVisualPrefabPath);
+            var definition = AssetDatabase.LoadAssetAtPath<PrototypeAvatarDefinition>(AvatarDefinitionPath);
+            if (definition == null)
+            {
+                definition = ScriptableObject.CreateInstance<PrototypeAvatarDefinition>();
+                definition.ConfigurePrototypePlaceholder(prefab);
+                AssetDatabase.CreateAsset(definition, AvatarDefinitionPath);
+            }
+            else if (!definition.Validate(out _) && prefab != null)
+            {
+                definition.ConfigurePrototypePlaceholder(prefab);
                 EditorUtility.SetDirty(definition);
             }
 

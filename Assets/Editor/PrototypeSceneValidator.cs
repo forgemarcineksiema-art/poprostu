@@ -23,6 +23,7 @@ namespace ValleDePlata.Editor
             }
 
             RequireComponent<PrototypePlayerController>("Pablo Valera Prototype Controller");
+            RequireComponent<PrototypeAvatarView>("Pablo Character Visual");
             RequireComponent<PrototypeVehicleController>("Prototype Sedan");
             RequireComponent<PrototypeCameraRig>("Prototype Camera Rig");
             RequireComponent<PrototypeCursorController>("Prototype Cursor Controller");

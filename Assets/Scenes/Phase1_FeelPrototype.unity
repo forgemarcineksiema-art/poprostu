@@ -2733,6 +2733,7 @@ MonoBehaviour:
   m_Name:
   m_EditorClassIdentifier: ValleDePlata.Prototype::ValleDePlata.Prototype.PrototypeCharacterPresentation
   visualRoot: {fileID: 1114679958}
+  avatarView: {fileID: 1114679959}
   walkThreshold: 0.15
   sprintSpeedRatio: 0.78
   bobAmplitude: 0.025
@@ -6970,6 +6971,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1114679958}
+  - component: {fileID: 1114679959}
   m_Layer: 8
   m_Name: Pablo Character Visual
   m_TagString: Untagged
@@ -6993,6 +6995,20 @@ Transform:
   - {fileID: 1260313562}
   m_Father: {fileID: 375886970}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1114679959
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1114679957}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dce31ecc3ed48b14795808f4be72faaa, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: ValleDePlata.Prototype::ValleDePlata.Prototype.PrototypeAvatarView
+  avatarDefinition: {fileID: 11400000, guid: e8f1191f22e16794cba017777fd93984, type: 2}
+  fullBodyRoot: {fileID: 1260313562}
 --- !u!1 &1124016086
 GameObject:
   m_ObjectHideFlags: 0
